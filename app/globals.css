@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  --board: #12151b;
+  --panel: #1a1e27;
+  --panel-raised: #212632;
+  --hairline: #2a303c;
+  --ink: #eceef2;
+  --ink-muted: #8891a3;
+  --ink-faint: #5b6472;
+
+  --accent: #e8a33d;
+  --accent-hover: #f5b85c;
+  --accent-ink: #1a1408;
+
+  --value: #4fae72;
+  --reach: #e2584f;
+
+  --pos-qb: #ce7a50;
+  --pos-rb: #4f86c9;
+  --pos-wr: #c9a227;
+  --pos-te: #9471d6;
+  --pos-k: #7c8595;
+  --pos-dst: #56607a;
+}
+
+@theme inline {
+  --color-board: var(--board);
+  --color-panel: var(--panel);
+  --color-panel-raised: var(--panel-raised);
+  --color-hairline: var(--hairline);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+
+  --color-value: var(--value);
+  --color-reach: var(--reach);
+
+  --color-pos-qb: var(--pos-qb);
+  --color-pos-rb: var(--pos-rb);
+  --color-pos-wr: var(--pos-wr);
+  --color-pos-te: var(--pos-te);
+  --color-pos-k: var(--pos-k);
+  --color-pos-dst: var(--pos-dst);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+html,
+body {
+  background: var(--board);
+  color: var(--ink);
+}
+
+body {
+  background-image:
+    linear-gradient(var(--hairline) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hairline) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-attachment: fixed;
+  background-position: -1px -1px;
+  background-color: var(--board);
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--board);
+  opacity: 0.94;
+  pointer-events: none;
+  z-index: -1;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+* {
+  scrollbar-color: var(--hairline) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

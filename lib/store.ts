@@ -1,0 +1,73 @@
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { safeLocalStorage } from "./storage";
+import { computeDraftPickUpdate, spliceReorder } from "./boardOps";
+import type { BoardState, DraftStatus } from "./types";
+
+interface BoardActions {
+  initOrder: (playerIds: string[]) => void;
+  reorderPlayer: (activeId: string, overId: string) => void;
+  resetToConsensus: (consensusOrderedIds: string[]) => void;
+  setDraftStatus: (playerId: string, status: DraftStatus) => void;
+  undraft: (playerId: string) => void;
+}
+
+type BoardStore = BoardState & BoardActions;
+
+export const useBoardStore = create<BoardStore>()(
+  persist(
+    (set, get) => ({
+      customOrder: [],
+      draftPicks: {},
+      nextPickNumber: 1,
+
+      initOrder: (playerIds) => {
+        const { customOrder } = get();
+        if (customOrder.length > 0) {
+          const known = new Set(customOrder);
+          const missing = playerIds.filter((id) => !known.has(id));
+          if (missing.length > 0) {
+            set({ customOrder: [...customOrder, ...missing] });
+          }
+          return;
+        }
+        set({ customOrder: playerIds });
+      },
+
+      reorderPlayer: (activeId, overId) => {
+        const { customOrder } = get();
+        const next = spliceReorder(customOrder, activeId, overId);
+        if (next) set({ customOrder: next });
+      },
+
+      resetToConsensus: (consensusOrderedIds) => {
+        set({ customOrder: consensusOrderedIds });
+      },
+
+      setDraftStatus: (playerId, status) => {
+        const { draftPicks, nextPickNumber } = get();
+        const { pick, nextPickNumber: nextCounter } = computeDraftPickUpdate(
+          draftPicks[playerId],
+          status,
+          nextPickNumber
+        );
+        set({
+          draftPicks: { ...draftPicks, [playerId]: pick },
+          nextPickNumber: nextCounter,
+        });
+      },
+
+      undraft: (playerId) => {
+        const { draftPicks } = get();
+        const next = { ...draftPicks };
+        delete next[playerId];
+        set({ draftPicks: next });
+      },
+    }),
+    {
+      name: "fantasyboard:board:v1",
+      storage: createJSONStorage(() => safeLocalStorage),
+      skipHydration: true,
+    }
+  )
+);
