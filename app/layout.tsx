@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Oswald, Inter, IBM_Plex_Mono } from "next/font/google";
 import Link from "next/link";
 import Script from "next/script";
@@ -54,6 +55,7 @@ export default function RootLayout({
             Privacy
           </Link>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
