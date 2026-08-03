@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Inter, IBM_Plex_Mono } from "next/font/google";
+import Link from "next/link";
+import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 
@@ -30,13 +32,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+
   return (
     <html
       lang="en"
       className={`${oswald.variable} ${inter.variable} ${plexMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-body antialiased">
+        {adsenseClientId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
         <AuthProvider>{children}</AuthProvider>
+        <footer className="border-t border-hairline px-4 py-3 text-center">
+          <Link href="/privacy" className="font-mono text-[11px] text-ink-faint hover:text-ink-muted">
+            Privacy
+          </Link>
+        </footer>
       </body>
     </html>
   );

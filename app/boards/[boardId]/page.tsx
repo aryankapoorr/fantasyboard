@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
 import { useFirestoreBoard } from "@/lib/firestoreBoards";
+import { BoardPageMain } from "@/components/BoardPageMain";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FirestoreBoardView } from "@/components/FirestoreBoardView";
 import type { Player } from "@/lib/types";
@@ -82,9 +83,9 @@ export default function BoardPage() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader mode="board" backHref="/boards" backLabel="my boards" />
       <BoardNameBar uid={user.uid} boardId={boardId} />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col">
+      <BoardPageMain>
         <FirestoreBoardView uid={user.uid} boardId={boardId} players={playersData.players as Player[]} />
-      </main>
+      </BoardPageMain>
     </div>
   );
 }
