@@ -73,6 +73,7 @@ interface FirestoreBoardActions {
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
   toggleFavorite: (playerId: string) => void;
+  setNote: (playerId: string, text: string) => void;
   rename: (name: string) => void;
 }
 
@@ -154,6 +155,14 @@ export function useFirestoreBoard(
         updatedAt: serverTimestamp(),
       });
     },
+    setNote: (playerId, text) => {
+      if (!uid || !boardId) return;
+      const trimmed = text.trim();
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        [`notes.${playerId}`]: trimmed ? trimmed : deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+    },
     rename: (name) => {
       if (!uid || !boardId) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
@@ -182,6 +191,7 @@ export async function createBoard(
     nextPickNumber: 1,
     format,
     favorites: [],
+    notes: {},
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

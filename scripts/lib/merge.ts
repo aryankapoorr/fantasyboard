@@ -1,7 +1,8 @@
 import { normalizeName } from "../../lib/normalize";
-import type { Player, RankingBundle, RankingFormat, SeedPlayer } from "../../lib/types";
+import type { Player, RankingBundle, RankingFormat, SeedPlayer, StatLine } from "../../lib/types";
 import type { EspnPlayer } from "./espn";
 import type { FfcPlayer } from "./ffc";
+import type { SleeperData, SleeperEntry } from "./sleeper";
 
 export interface FormatCoverage {
   consensusEspnCount: number;
@@ -17,6 +18,7 @@ export interface MergeResult {
   topTierCount: number;
   unmatchedNames: string[];
   coverage: Record<RankingFormat, FormatCoverage>;
+  sleeperMatchedCount: number;
 }
 
 // ESPN only ships cross-position/analyst-blended ranks with real confidence for its own
@@ -38,6 +40,18 @@ interface SeedEntry {
   seed: SeedPlayer;
   espn: EspnPlayer | undefined;
   ffc: Record<RankingFormat, FfcPlayer | undefined>;
+  sleeperProjection: SleeperEntry | undefined;
+  sleeperLastSeason: SleeperEntry | undefined;
+}
+
+function lookupSleeper(index: SleeperData["projections"], name: string, position: string, team: string): SleeperEntry | undefined {
+  return position === "DST" ? index.dstByTeam.get(team) : index.byNameAndPosition.get(indexKey(name, position));
+}
+
+// StatLine is position-agnostic and identical regardless of scoring format, so it's built once
+// from whichever Sleeper entry matched (projection or last-season), not per-format.
+function toPlayerStatLine(entry: SleeperEntry | undefined): StatLine | null {
+  return entry?.statLine ?? null;
 }
 
 // Two-tier sort avoids ever comparing values from different scales directly: entries with a
@@ -64,6 +78,7 @@ export function mergePlayers(
   seed: SeedPlayer[],
   espnPlayers: EspnPlayer[],
   ffcByFormat: Record<RankingFormat, FfcPlayer[]>,
+  sleeper: SleeperData,
   aliases: Record<string, string>
 ): MergeResult {
   const byNameAndPosition = new Map<string, EspnPlayer>();
@@ -97,6 +112,7 @@ export function mergePlayers(
   const unmatchedNames: string[] = [];
   let matchedFromEspnCount = 0;
   let topTierCount = 0;
+  let sleeperMatchedCount = 0;
 
   for (const s of seed) {
     const resolvedName = aliases[s.name] ?? s.name;
@@ -111,11 +127,15 @@ export function mergePlayers(
       for (const format of FORMATS) ffc[format] = ffcIndex[format].byNameAndPosition.get(indexKey(resolvedName, s.position));
     }
 
+    const sleeperProjection = lookupSleeper(sleeper.projections, resolvedName, s.position, s.team);
+    const sleeperLastSeason = lookupSleeper(sleeper.lastSeason, resolvedName, s.position, s.team);
+    if (sleeperProjection || sleeperLastSeason) sleeperMatchedCount++;
+
     if (espn) matchedFromEspnCount++;
     else unmatchedNames.push(s.name);
     if (s.rank <= TOP_TIER_SEED_RANK) topTierCount++;
 
-    entries.push({ seed: s, espn, ffc });
+    entries.push({ seed: s, espn, ffc, sleeperProjection, sleeperLastSeason });
   }
 
   // consensusRank: overall cross-position rank, per format, from ESPN's own draftRanksByRankType
@@ -187,6 +207,8 @@ export function mergePlayers(
         adpLow: ffcPlayer?.low ?? null,
         adpStdev: ffcPlayer?.stdev ?? null,
         adpSampleSize: ffcPlayer?.timesDrafted ?? null,
+        projectedPoints: (format === "ppr" ? e.sleeperProjection?.pointsPpr : e.sleeperProjection?.pointsStd) ?? null,
+        lastSeasonPoints: (format === "ppr" ? e.sleeperLastSeason?.pointsPpr : e.sleeperLastSeason?.pointsStd) ?? null,
       };
     }
 
@@ -205,8 +227,10 @@ export function mergePlayers(
       matchedFromEspn: !!e.espn,
       ppr: bundles.ppr,
       standard: bundles.standard,
+      projectedStatLine: toPlayerStatLine(e.sleeperProjection),
+      lastSeasonStatLine: toPlayerStatLine(e.sleeperLastSeason),
     };
   });
 
-  return { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage };
+  return { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage, sleeperMatchedCount };
 }

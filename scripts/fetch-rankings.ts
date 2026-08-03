@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { z } from "zod";
 import { fetchPlayerPool } from "./lib/espn";
 import { fetchFfcAdp } from "./lib/ffc";
+import { fetchSleeperData } from "./lib/sleeper";
 import { mergePlayers, round1 } from "./lib/merge";
 import type { PlayersFile, RankingFormat, SeedPlayer } from "../lib/types";
 
@@ -64,15 +65,29 @@ async function main() {
   const ffcStandard = await fetchFfcAdp(season, "standard");
   console.log(`Fetched ${ffcPpr.length} FFC PPR players, ${ffcStandard.length} FFC standard players.`);
 
-  const { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage } = mergePlayers(
+  console.log(`Fetching Sleeper projections (${season}) and last-season stats (${season - 1})...`);
+  const sleeperData = await fetchSleeperData(season);
+  console.log(
+    `Fetched ${sleeperData.projections.byNameAndPosition.size + sleeperData.projections.dstByTeam.size} Sleeper projections, ` +
+      `${sleeperData.lastSeason.byNameAndPosition.size + sleeperData.lastSeason.dstByTeam.size} Sleeper last-season stat lines.`
+  );
+
+  const { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage, sleeperMatchedCount } = mergePlayers(
     seed,
     espnPlayers,
     { ppr: ffcPpr, standard: ffcStandard },
+    sleeperData,
     aliases
   );
 
   const espnPct = ((matchedFromEspnCount / seed.length) * 100).toFixed(1);
   console.log(`Matched ${matchedFromEspnCount}/${seed.length} (${espnPct}%) seed players to ESPN data.`);
+
+  const sleeperPct = ((sleeperMatchedCount / seed.length) * 100).toFixed(1);
+  console.log(
+    `Matched ${sleeperMatchedCount}/${seed.length} (${sleeperPct}%) seed players to Sleeper projections/stats ` +
+      `(supplementary enrichment — not a build-blocking threshold).`
+  );
 
   for (const format of FORMATS) {
     const c = coverage[format];

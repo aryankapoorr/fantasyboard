@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { buildRows, filterAndSortRows, sortByAdpIds, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
 import type { BoardState, DraftStatus, Player } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
+import { PlayerDetailModal } from "./PlayerDetailModal";
 import { PlayerTable } from "./PlayerTable";
 
 export interface BoardActions {
@@ -12,6 +13,7 @@ export interface BoardActions {
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
   toggleFavorite: (playerId: string) => void;
+  setNote: (playerId: string, text: string) => void;
 }
 
 interface BoardShellProps {
@@ -25,6 +27,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   const [editMode, setEditMode] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("adp");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   // Fixed at board creation — boards written before this field existed fall back to PPR.
   const format = board.format ?? "ppr";
   const [filters, setFilters] = useState<FilterState>({
@@ -72,6 +75,13 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
 
   const draftedCount = Object.keys(board.draftPicks).length;
 
+  // A player can only be selected by clicking a currently-rendered row, and the modal's backdrop
+  // blocks further table interaction while open, so both lookups are safe at render time.
+  const selectedRow = selectedPlayerId ? (rows.find((r) => r.id === selectedPlayerId) ?? null) : null;
+  const otherFormatBundle = selectedPlayerId
+    ? players.find((p) => p.id === selectedPlayerId)?.[format === "ppr" ? "standard" : "ppr"]
+    : undefined;
+
   return (
     <div className="flex flex-1 flex-col">
       <FilterBar
@@ -102,8 +112,20 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           onDraftOther={(id) => actions.setDraftStatus(id, "drafted_by_other")}
           onUndraft={actions.undraft}
           onToggleFavorite={actions.toggleFavorite}
+          onOpenDetail={setSelectedPlayerId}
         />
       </div>
+
+      {selectedRow && otherFormatBundle && (
+        <PlayerDetailModal
+          row={selectedRow}
+          otherFormatBundle={otherFormatBundle}
+          note={board.notes?.[selectedRow.id] ?? ""}
+          onNoteChange={(text) => actions.setNote(selectedRow.id, text)}
+          onToggleFavorite={() => actions.toggleFavorite(selectedRow.id)}
+          onClose={() => setSelectedPlayerId(null)}
+        />
+      )}
     </div>
   );
 }

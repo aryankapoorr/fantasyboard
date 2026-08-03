@@ -8,7 +8,7 @@ import { PositionBadge, positionEdgeColor } from "./PositionBadge";
 import { StatDelta } from "./StatDelta";
 import type { BoardRow } from "@/lib/derive";
 
-function adpTooltip(row: BoardRow): string | undefined {
+export function adpTooltip(row: BoardRow): string | undefined {
   const formatLabel = row.format === "ppr" ? "PPR" : "standard";
   const parts: string[] = [`FantasyFootballCalculator ${formatLabel} ADP`];
   if (row.adpStdev !== null && row.adpSampleSize !== null) {
@@ -18,7 +18,7 @@ function adpTooltip(row: BoardRow): string | undefined {
   return parts.join(" · ");
 }
 
-function rankTooltip(row: BoardRow): string {
+export function rankTooltip(row: BoardRow): string {
   const formatLabel = row.format === "ppr" ? "PPR" : "standard";
   const overall =
     row.consensusSource === "espn"
@@ -50,9 +50,18 @@ interface PlayerRowProps {
   onDraftOther: (id: string) => void;
   onUndraft: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onOpenDetail: (id: string) => void;
 }
 
-export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft, onToggleFavorite }: PlayerRowProps) {
+export function PlayerRow({
+  row,
+  editMode,
+  onDraftMe,
+  onDraftOther,
+  onUndraft,
+  onToggleFavorite,
+  onOpenDetail,
+}: PlayerRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
     disabled: !editMode,
@@ -88,8 +97,8 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft, o
       <div className="text-right font-mono text-sm font-medium tabular-nums text-ink">{row.mineRank}</div>
 
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
-        <div className="min-w-0">
-          <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink">
+        <button type="button" onClick={() => onOpenDetail(row.id)} className="min-w-0 text-left">
+          <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
             {row.name}
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
@@ -98,7 +107,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft, o
             {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
             {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
           </div>
-        </div>
+        </button>
       </div>
 
       <button

@@ -62,6 +62,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
         setDraftStatus: store.setDraftStatus,
         undraft: store.undraft,
         toggleFavorite: store.toggleFavorite,
+        setNote: store.setNote,
       }}
     />
   );

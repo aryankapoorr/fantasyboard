@@ -18,6 +18,7 @@ interface PlayerTableProps {
   onDraftOther: (id: string) => void;
   onUndraft: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onOpenDetail: (id: string) => void;
 }
 
 function HeaderCell({
@@ -61,6 +62,7 @@ export function PlayerTable({
   onDraftOther,
   onUndraft,
   onToggleFavorite,
+  onOpenDetail,
 }: PlayerTableProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const formatLabel = format === "ppr" ? "PPR" : "STD";
@@ -100,6 +102,7 @@ export function PlayerTable({
               onDraftOther={onDraftOther}
               onUndraft={onUndraft}
               onToggleFavorite={onToggleFavorite}
+              onOpenDetail={onOpenDetail}
             />
           ))}
         </SortableContext>

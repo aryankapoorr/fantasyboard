@@ -18,6 +18,33 @@ export interface RankingBundle {
   adpLow: number | null;
   adpStdev: number | null;
   adpSampleSize: number | null; // FFC times_drafted
+  projectedPoints: number | null; // Sleeper/RotoWire full-season projection, this format only
+  lastSeasonPoints: number | null; // Sleeper actual full-season total from the prior season, this format only
+}
+
+// Position-agnostic per-game-category totals (season projection or prior-season actual).
+// Sourced from Sleeper's undocumented bulk projections/stats endpoints (see scripts/lib/sleeper.ts).
+// Every field is nullable and populated only when Sleeper reports it for that player/position —
+// most fields stay null for irrelevant positions (e.g. a WR's fgMade is always null).
+export interface StatLine {
+  gamesPlayed: number | null;
+  passYards: number | null;
+  passTd: number | null;
+  passInt: number | null;
+  rushAttempts: number | null;
+  rushYards: number | null;
+  rushTd: number | null;
+  receptions: number | null;
+  recYards: number | null;
+  recTd: number | null;
+  fumblesLost: number | null;
+  fgMade: number | null;
+  fgAttempted: number | null;
+  xpMade: number | null;
+  sacks: number | null;
+  defInterceptions: number | null;
+  fumbleRecoveries: number | null;
+  defTd: number | null;
 }
 
 export interface Player {
@@ -38,6 +65,9 @@ export interface Player {
   matchedFromEspn: boolean;
   ppr: RankingBundle;
   standard: RankingBundle;
+  // Format-agnostic category stats — same underlying game-log numbers regardless of scoring format.
+  projectedStatLine: StatLine | null;
+  lastSeasonStatLine: StatLine | null;
 }
 
 export interface PlayersFile {
@@ -61,6 +91,7 @@ export interface BoardState {
   // Chosen once when the board is created; drives which format's rankings/ADP it shows.
   format: RankingFormat;
   favorites: string[];
+  notes: Record<string, string>;
 }
 
 export interface SeedPlayer {
