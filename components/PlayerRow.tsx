@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Check, Undo2 } from "lucide-react";
+import { GripVertical, Undo2 } from "lucide-react";
 import { InjuryBadge } from "./InjuryBadge";
 import { PositionBadge, positionEdgeColor } from "./PositionBadge";
 import { StatDelta } from "./StatDelta";
@@ -64,7 +64,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid grid-cols-[auto_1fr_3.5rem_auto_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_4.5rem_4.5rem_2.5rem_4.5rem_9rem] ${
+      className={`group grid grid-cols-[auto_2rem_1fr_3rem_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_9rem] ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
@@ -79,6 +79,8 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
       >
         <GripVertical size={15} />
       </button>
+
+      <div className="text-right font-mono text-sm font-medium tabular-nums text-ink">{row.mineRank}</div>
 
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
         <div className="min-w-0">
@@ -102,14 +104,11 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
         <div className="font-mono text-sm tabular-nums text-ink-muted">#{row.consensusRank}</div>
         <div className="font-mono text-[10px] tabular-nums text-ink-faint">{rankSourceLabel(row)}</div>
       </div>
-      <div className="hidden text-right font-mono text-sm font-medium tabular-nums text-ink sm:block">
-        {row.mineRank}
-      </div>
       <div className="hidden justify-self-end sm:block">
         <StatDelta delta={row.adpWeeklyDelta} />
       </div>
 
-      <div className="col-span-4 flex items-center justify-end gap-1.5 sm:col-span-1">
+      <div className="col-span-3 flex items-center justify-end gap-1.5 sm:col-span-1">
         {isDrafted ? (
           <button
             onClick={() => onUndraft(row.id)}
@@ -121,9 +120,9 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
           <>
             <button
               onClick={() => onDraftMe(row.id)}
-              className="flex items-center gap-1 rounded border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] font-medium text-accent hover:bg-accent/20"
+              className="rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
             >
-              <Check size={12} /> me
+              me
             </button>
             <button
               onClick={() => onDraftOther(row.id)}
