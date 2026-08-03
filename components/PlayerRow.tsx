@@ -3,9 +3,20 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Check, Undo2 } from "lucide-react";
+import { InjuryBadge } from "./InjuryBadge";
 import { PositionBadge, positionEdgeColor } from "./PositionBadge";
 import { StatDelta } from "./StatDelta";
 import type { BoardRow } from "@/lib/derive";
+
+function adpTooltip(row: BoardRow): string | undefined {
+  const parts: string[] = [];
+  if (row.espnAdp !== null) parts.push(`ESPN ${row.espnAdp.toFixed(1)}`);
+  if (row.ffcAdp !== null) parts.push(`FFC ${row.ffcAdp.toFixed(1)}`);
+  if (row.adpStdev !== null && row.adpSampleSize !== null) {
+    parts.push(`σ${row.adpStdev.toFixed(1)} (n=${row.adpSampleSize})`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
 
 interface PlayerRowProps {
   row: BoardRow;
@@ -59,6 +70,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
             <PositionBadge position={row.position} />
             <span className="font-mono">{row.team}</span>
             {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
+            {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
           </div>
         </div>
       </div>
@@ -66,7 +78,10 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
       <div className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block">
         #{row.consensusRank}
       </div>
-      <div className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block">
+      <div
+        className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block"
+        title={adpTooltip(row)}
+      >
         {row.adp !== null ? row.adp.toFixed(1) : "—"}
       </div>
       <div className="hidden justify-self-end sm:block">

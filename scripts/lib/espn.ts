@@ -23,8 +23,11 @@ export interface EspnPlayer {
   team: string;
   byeWeek: number | null;
   adp: number | null;
+  adpTrendPct: number | null;
   percentOwned: number | null;
   auctionValue: number | null;
+  averageRank: number | null;
+  injuryStatus: string | null;
 }
 
 async function fetchJson(url: string, headers?: Record<string, string>): Promise<unknown> {
@@ -48,6 +51,13 @@ interface RawProTeamSchedulesResponse {
   settings?: { proTeams?: { id: number; abbrev?: string; byeWeek?: number }[] };
 }
 
+interface RawRankingEntry {
+  rank: number;
+  rankSourceId: number;
+  rankType: string;
+  averageRank?: number;
+}
+
 interface RawPlayerPoolResponse {
   players?: {
     player?: {
@@ -55,9 +65,23 @@ interface RawPlayerPoolResponse {
       fullName: string;
       defaultPositionId: number;
       proTeamId: number;
-      ownership?: { averageDraftPosition?: number; percentOwned?: number; auctionValueAverage?: number };
+      injuryStatus?: string;
+      ownership?: {
+        averageDraftPosition?: number;
+        averageDraftPositionPercentChange?: number;
+        percentOwned?: number;
+        auctionValueAverage?: number;
+      };
+      rankings?: Record<string, RawRankingEntry[]>;
     };
   }[];
+}
+
+function extractAverageRank(rankings: Record<string, RawRankingEntry[]> | undefined): number | null {
+  const entries = rankings?.["0"];
+  if (!entries) return null;
+  const consensus = entries.find((e) => e.rankSourceId === 0 && e.rankType === "STANDARD");
+  return typeof consensus?.averageRank === "number" ? consensus.averageRank : null;
 }
 
 export async function fetchProTeams(season: number): Promise<Map<number, EspnProTeam>> {
@@ -97,8 +121,14 @@ export async function fetchPlayerPool(season: number, limit = 400): Promise<Espn
       team: team?.abbrev ?? "FA",
       byeWeek: team?.byeWeek ?? null,
       adp: typeof ownership.averageDraftPosition === "number" ? ownership.averageDraftPosition : null,
+      adpTrendPct:
+        typeof ownership.averageDraftPositionPercentChange === "number"
+          ? ownership.averageDraftPositionPercentChange
+          : null,
       percentOwned: typeof ownership.percentOwned === "number" ? ownership.percentOwned : null,
       auctionValue: typeof ownership.auctionValueAverage === "number" ? ownership.auctionValueAverage : null,
+      averageRank: extractAverageRank(p.rankings),
+      injuryStatus: p.injuryStatus ?? null,
     });
   }
   return players;

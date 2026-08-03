@@ -7,13 +7,23 @@ export interface Player {
   position: Position;
   team: string; // uppercase abbrev, "FA" if unrostered
   byeWeek: number | null;
-  consensusRank: number; // from seed file, 1-based overall
+  consensusRank: number; // dense 1..N rank, from ESPN's cross-analyst averageRank, falling back to seed file
+  consensusSource: "espn-average" | "seed-fallback";
   positionRank: number; // derived post-merge, 1-based within position
-  adp: number | null; // from ESPN
+  adp: number | null; // blended average of espnAdp/ffcAdp (or whichever is available)
+  espnAdp: number | null;
+  ffcAdp: number | null;
   adpDelta: number | null; // adp - consensusRank
+  adpHigh: number | null; // from FantasyFootballCalculator
+  adpLow: number | null;
+  adpStdev: number | null;
+  adpSampleSize: number | null; // FFC times_drafted
+  adpTrendPct: number | null; // from ESPN week-over-week ADP change
+  injuryStatus: string | null; // from ESPN, e.g. "QUESTIONABLE"
   auctionValue: number | null;
   percentOwned: number | null;
   matchedFromEspn: boolean;
+  matchedFromFfc: boolean;
 }
 
 export interface PlayersFile {
