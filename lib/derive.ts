@@ -9,9 +9,11 @@ export interface BoardRow extends Player {
   draftStatus: DraftStatus;
 }
 
+const FLEX_POSITIONS = new Set<Position>(["RB", "WR", "TE"]);
+
 export interface FilterState {
   search: string;
-  position: Position | "ALL";
+  position: Position | "ALL" | "FLEX";
   hideDrafted: boolean;
   onlyMine: boolean;
 }
@@ -45,7 +47,8 @@ export function filterAndSortRows(
   const query = normalizeName(filters.search);
 
   let result = rows.filter((r) => {
-    if (filters.position !== "ALL" && r.position !== filters.position) return false;
+    if (filters.position === "FLEX" && !FLEX_POSITIONS.has(r.position)) return false;
+    if (filters.position !== "ALL" && filters.position !== "FLEX" && r.position !== filters.position) return false;
     if (filters.hideDrafted && r.draftStatus !== "available") return false;
     if (filters.onlyMine && r.draftStatus !== "drafted_by_me") return false;
     if (query && !normalizeName(r.name).includes(query)) return false;

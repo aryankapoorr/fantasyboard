@@ -42,6 +42,16 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     }
   }
 
+  function handleEditModeChange(next: boolean) {
+    setEditMode(next);
+    if (next) {
+      // Dragging reorders customOrder ("mine"); the visible row order must
+      // follow it, or drags appear to do nothing.
+      setSortKey("mine");
+      setSortDir("asc");
+    }
+  }
+
   const rows = useMemo(() => {
     if (!hydrated) return [];
     const built = buildRows(players, board);
@@ -64,7 +74,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         filters={filters}
         onFiltersChange={setFilters}
         editMode={editMode}
-        onEditModeChange={setEditMode}
+        onEditModeChange={handleEditModeChange}
         onReset={() => actions.resetOrder(adpOrderedIds)}
       />
       <div

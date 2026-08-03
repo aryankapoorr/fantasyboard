@@ -4,7 +4,7 @@ import { Search, RotateCcw, Users } from "lucide-react";
 import type { Position } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
-const POSITIONS: (Position | "ALL")[] = ["ALL", "QB", "RB", "WR", "TE", "K", "DST"];
+const POSITIONS: (Position | "ALL" | "FLEX")[] = ["ALL", "QB", "RB", "WR", "TE", "FLEX", "K", "DST"];
 
 interface FilterBarProps {
   filters: FilterState;
