@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
-import { sortByAdpIds } from "@/lib/derive";
-import { useRankingFormat } from "@/lib/rankingFormat";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useUserBoards, createBoard, renameBoard, deleteBoard, type BoardSummary } from "@/lib/firestoreBoards";
-import type { Player } from "@/lib/types";
+import { NewBoardDialog } from "@/components/NewBoardDialog";
+import { useUserBoards, renameBoard, deleteBoard, type BoardSummary } from "@/lib/firestoreBoards";
 
 function formatRelative(date: Date | null): string {
   if (!date) return "just now";
@@ -104,43 +101,19 @@ function BoardCard({ uid, board }: { uid: string; board: BoardSummary }) {
   );
 }
 
-function NewBoardForm({ uid }: { uid: string }) {
-  const [name, setName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const router = useRouter();
-  const [format] = useRankingFormat();
-
-  const adpOrderedIds = useMemo(() => sortByAdpIds(playersData.players as Player[], format), [format]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed || creating) return;
-    setCreating(true);
-    try {
-      const id = await createBoard(uid, trimmed, adpOrderedIds, playersData.season);
-      router.push(`/boards/${id}`);
-    } finally {
-      setCreating(false);
-    }
-  }
+function NewBoardButton({ uid }: { uid: string }) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="New board name…"
-        className="w-56 rounded border border-hairline bg-board px-3 py-2 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent"
-      />
+    <>
       <button
-        type="submit"
-        disabled={!name.trim() || creating}
-        className="flex items-center gap-1.5 rounded border border-accent bg-accent px-3 py-2 font-mono text-[12px] font-medium text-accent-ink hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 rounded border border-accent bg-accent px-3 py-2 font-mono text-[12px] font-medium text-accent-ink hover:bg-accent-hover"
       >
         <Plus size={14} /> new board
       </button>
-    </form>
+      {open && <NewBoardDialog uid={uid} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -167,7 +140,7 @@ export default function BoardsPage() {
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-10">
         <div className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-semibold tracking-wide text-ink">My Boards</h1>
-          <NewBoardForm uid={user.uid} />
+          <NewBoardButton uid={user.uid} />
         </div>
 
         <div className="mt-8 overflow-hidden rounded-md border border-hairline">

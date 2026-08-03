@@ -58,6 +58,8 @@ export interface BoardState {
   customOrder: string[];
   draftPicks: Record<string, DraftPickState>;
   nextPickNumber: number;
+  // Chosen once when the board is created; drives which format's rankings/ADP it shows.
+  format: RankingFormat;
 }
 
 export interface SeedPlayer {

@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { computeDraftPickUpdate, spliceReorder } from "./boardOps";
-import type { BoardState, DraftStatus, FirestoreBoardDoc } from "./types";
+import type { BoardState, DraftStatus, FirestoreBoardDoc, RankingFormat } from "./types";
 
 export interface BoardSummary {
   id: string;
@@ -160,7 +160,8 @@ export async function createBoard(
   uid: string,
   name: string,
   orderedIds: string[],
-  season: number
+  season: number,
+  format: RankingFormat
 ): Promise<string> {
   const ref = await addDoc(collection(db, "users", uid, "boards"), {
     name,
@@ -168,6 +169,7 @@ export async function createBoard(
     customOrder: orderedIds,
     draftPicks: {},
     nextPickNumber: 1,
+    format,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

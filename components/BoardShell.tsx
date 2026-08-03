@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { buildRows, filterAndSortRows, sortByAdpIds, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
-import { useRankingFormat } from "@/lib/rankingFormat";
 import type { BoardState, DraftStatus, Player } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
 import { PlayerTable } from "./PlayerTable";
@@ -25,7 +24,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   const [editMode, setEditMode] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("adp");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [format, setFormat] = useRankingFormat();
+  // Fixed at board creation — boards written before this field existed fall back to PPR.
+  const format = board.format ?? "ppr";
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     position: "ALL",
@@ -77,8 +77,6 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={handleEditModeChange}
-        format={format}
-        onFormatChange={setFormat}
         onReset={() => actions.resetOrder(adpOrderedIds)}
       />
       <div

@@ -2,9 +2,12 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./storage";
 import { computeDraftPickUpdate, spliceReorder } from "./boardOps";
-import type { BoardState, DraftStatus } from "./types";
+import type { BoardState, DraftStatus, RankingFormat } from "./types";
 
 interface BoardActions {
+  // Sets the board's format and seeds its order in one step — only meant for a brand new board
+  // (customOrder still empty), once the user picks PPR or standard.
+  chooseFormat: (format: RankingFormat, orderedIds: string[]) => void;
   initOrder: (playerIds: string[]) => void;
   reorderPlayer: (activeId: string, overId: string) => void;
   resetOrder: (orderedIds: string[]) => void;
@@ -20,6 +23,11 @@ export const useBoardStore = create<BoardStore>()(
       customOrder: [],
       draftPicks: {},
       nextPickNumber: 1,
+      format: "ppr",
+
+      chooseFormat: (format, orderedIds) => {
+        set({ format, customOrder: orderedIds });
+      },
 
       initOrder: (playerIds) => {
         const { customOrder } = get();

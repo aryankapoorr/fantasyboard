@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, RotateCcw, Users } from "lucide-react";
-import type { Position, RankingFormat } from "@/lib/types";
+import type { Position } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
 const POSITIONS: (Position | "ALL" | "FLEX")[] = ["ALL", "QB", "RB", "WR", "TE", "FLEX", "K", "DST"];
@@ -11,20 +11,10 @@ interface FilterBarProps {
   onFiltersChange: (next: FilterState) => void;
   editMode: boolean;
   onEditModeChange: (next: boolean) => void;
-  format: RankingFormat;
-  onFormatChange: (next: RankingFormat) => void;
   onReset: () => void;
 }
 
-export function FilterBar({
-  filters,
-  onFiltersChange,
-  editMode,
-  onEditModeChange,
-  format,
-  onFormatChange,
-  onReset,
-}: FilterBarProps) {
+export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange, onReset }: FilterBarProps) {
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-hairline bg-panel/95 px-3 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -68,24 +58,6 @@ export function FilterBar({
         >
           <Users size={12} /> my team
         </button>
-
-        <div className="flex items-center overflow-hidden rounded border border-hairline" role="group" aria-label="Scoring format">
-          {(["ppr", "standard"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => onFormatChange(f)}
-              aria-pressed={format === f}
-              title={f === "ppr" ? "Point per reception scoring" : "Standard (non-PPR) scoring"}
-              className={`px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
-                format === f
-                  ? "bg-accent/15 text-accent"
-                  : "text-ink-muted hover:bg-panel-raised hover:text-ink"
-              }`}
-            >
-              {f === "ppr" ? "PPR" : "STD"}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="flex items-center gap-4">
