@@ -64,7 +64,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid grid-cols-[auto_3.5rem_1fr_auto_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_4.5rem_minmax(0,1fr)_4.5rem_2.5rem_4.5rem_9rem] ${
+      className={`group grid grid-cols-[auto_1fr_3.5rem_auto_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_minmax(0,1fr)_4.5rem_4.5rem_2.5rem_4.5rem_9rem] ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
@@ -80,10 +80,6 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
         <GripVertical size={15} />
       </button>
 
-      <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
-        {row.adp !== null ? row.adp.toFixed(1) : "—"}
-      </div>
-
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
         <div className="min-w-0">
           <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink">
@@ -96,6 +92,10 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
             {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
           </div>
         </div>
+      </div>
+
+      <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
+        {row.adp !== null ? row.adp.toFixed(1) : "—"}
       </div>
 
       <div className="hidden text-right sm:block" title={rankTooltip(row)}>

@@ -67,10 +67,12 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onEditModeChange={setEditMode}
         onReset={() => actions.resetOrder(adpOrderedIds)}
       />
-      <div className="flex items-center justify-between px-3 py-2 font-mono text-[11px] text-ink-faint">
-        <span>
-          {rows.length} of {players.length} players
-        </span>
+      <div
+        className={`flex items-center justify-between px-3 py-2 font-mono text-[11px] ${
+          filters.onlyMine ? "bg-accent/10 text-accent" : "text-ink-faint"
+        }`}
+      >
+        <span>{filters.onlyMine ? `Your team — ${rows.length} player${rows.length === 1 ? "" : "s"}` : `${rows.length} of ${players.length} players`}</span>
         <span>{draftedCount} drafted</span>
       </div>
       <div className="px-3 pb-6">
