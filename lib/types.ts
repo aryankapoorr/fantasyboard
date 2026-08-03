@@ -7,13 +7,16 @@ export interface Player {
   position: Position;
   team: string; // uppercase abbrev, "FA" if unrostered
   byeWeek: number | null;
-  consensusRank: number; // dense 1..N rank, from ESPN's cross-analyst averageRank, falling back to seed file
-  consensusSource: "espn-average" | "seed-fallback";
-  positionRank: number; // derived post-merge, 1-based within position
+  consensusRank: number; // overall cross-position rank, from the curated seed file (data/seed/expert-rankings.json)
+  positionRank: number; // 1-based within position; from ESPN's cross-analyst position-blended rank when available
+  positionRankSource: "espn-analysts" | "editorial";
+  positionRankAnalystCount: number | null; // distinct outside analysts contributing, when source is espn-analysts
+  positionRankLow: number | null; // lowest (best) individual analyst rank
+  positionRankHigh: number | null; // highest (worst) individual analyst rank
   adp: number | null; // blended average of espnAdp/ffcAdp (or whichever is available)
   espnAdp: number | null;
   ffcAdp: number | null;
-  adpDelta: number | null; // adp - consensusRank
+  adpWeeklyDelta: number | null; // (adp ~7 days ago) - (adp now); positive = rising (ADP dropped)
   adpHigh: number | null; // from FantasyFootballCalculator
   adpLow: number | null;
   adpStdev: number | null;

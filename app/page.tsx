@@ -46,7 +46,7 @@ function PreviewRow({ player }: { player: Player }) {
         {player.adp !== null ? player.adp.toFixed(1) : "—"}
       </div>
       <div className="justify-self-end">
-        <StatDelta delta={player.adpDelta} />
+        <StatDelta delta={player.adpWeeklyDelta} />
       </div>
     </div>
   );

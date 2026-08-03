@@ -7,22 +7,22 @@ export interface MergeResult {
   players: Player[];
   matchedCount: number;
   matchedFromFfcCount: number;
-  espnAverageRankCount: number;
-  topTierEspnAverageRankCount: number;
+  positionRankEspnCount: number;
+  topTierPositionRankEspnCount: number;
   topTierCount: number;
   unmatchedNames: string[];
 }
 
-// ESPN only ships cross-analyst averageRank data for its own top-ranked players;
-// coverage tapers off for bench/K/DST. Used as a safety-net signal scoped to the
-// seed's top tier, where coverage should be ~universal, rather than the full list.
+// ESPN only ships cross-analyst position-blended ranks for its own top-ranked players;
+// coverage tapers off for bench/K/DST. Used as a safety-net signal scoped to the seed's
+// top tier, where coverage should be ~universal, rather than the full list.
 const TOP_TIER_SEED_RANK = 50;
 
 function indexKey(name: string, position: string): string {
   return `${normalizeName(name)}|${position}`;
 }
 
-function round1(n: number): number {
+export function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
@@ -55,15 +55,15 @@ export function mergePlayers(
   }
 
   interface Intermediate extends Omit<Player, "positionRank"> {
-    sourceRank: number;
+    positionAverageRankValue: number | null;
   }
 
   const merged: Intermediate[] = [];
   const unmatchedNames: string[] = [];
   let matchedCount = 0;
   let matchedFromFfcCount = 0;
-  let espnAverageRankCount = 0;
-  let topTierEspnAverageRankCount = 0;
+  let positionRankEspnCount = 0;
+  let topTierPositionRankEspnCount = 0;
   let topTierCount = 0;
 
   for (const s of seed) {
@@ -83,13 +83,13 @@ export function mergePlayers(
     const ffcAdp = ffc?.adp ?? null;
     const adp = espnAdp != null && ffcAdp != null ? round1((espnAdp + ffcAdp) / 2) : (espnAdp ?? ffcAdp ?? null);
 
-    const consensusSource: Player["consensusSource"] = espn?.averageRank != null ? "espn-average" : "seed-fallback";
-    const sourceRank = espn?.averageRank ?? s.rank;
-    if (consensusSource === "espn-average") espnAverageRankCount++;
-    if (s.rank <= TOP_TIER_SEED_RANK) {
-      topTierCount++;
-      if (consensusSource === "espn-average") topTierEspnAverageRankCount++;
+    const positionRankSource: Player["positionRankSource"] =
+      espn?.positionAverageRank != null ? "espn-analysts" : "editorial";
+    if (positionRankSource === "espn-analysts") {
+      positionRankEspnCount++;
+      if (s.rank <= TOP_TIER_SEED_RANK) topTierPositionRankEspnCount++;
     }
+    if (s.rank <= TOP_TIER_SEED_RANK) topTierCount++;
 
     if (espn) matchedCount++;
     else unmatchedNames.push(s.name);
@@ -102,12 +102,18 @@ export function mergePlayers(
       position: s.position,
       team: espn?.team ?? s.team,
       byeWeek: espn?.byeWeek ?? null,
-      consensusRank: 0, // assigned below once sourceRank is finalized for all players
-      consensusSource,
+      // Overall cross-position rank has exactly one free, non-circular source available:
+      // the curated seed file. ESPN's per-analyst blend is only meaningful within a position
+      // (see positionRank below) — mixing it in here was the bug that put kickers above RBs.
+      consensusRank: s.rank,
+      positionRankSource,
+      positionRankAnalystCount: espn?.positionRankAnalystCount ?? null,
+      positionRankLow: espn?.positionRankLow ?? null,
+      positionRankHigh: espn?.positionRankHigh ?? null,
       adp,
       espnAdp,
       ffcAdp,
-      adpDelta: null, // assigned below alongside consensusRank
+      adpWeeklyDelta: null, // filled in by fetch-rankings.ts against the rolling weekly anchor
       adpHigh: ffc?.high ?? null,
       adpLow: ffc?.low ?? null,
       adpStdev: ffc?.stdev ?? null,
@@ -118,15 +124,9 @@ export function mergePlayers(
       percentOwned: espn?.percentOwned ?? null,
       matchedFromEspn: !!espn,
       matchedFromFfc: !!ffc,
-      sourceRank,
+      positionAverageRankValue: espn?.positionAverageRank ?? null,
     });
   }
-
-  merged.sort((a, b) => a.sourceRank - b.sourceRank);
-  merged.forEach((p, i) => {
-    p.consensusRank = i + 1;
-    p.adpDelta = p.adp != null ? p.adp - p.consensusRank : null;
-  });
 
   const byPosition = new Map<string, Intermediate[]>();
   for (const p of merged) {
@@ -136,10 +136,16 @@ export function mergePlayers(
   }
   const positionRanks = new Map<string, number>();
   for (const [, list] of byPosition) {
-    list
-      .slice()
-      .sort((a, b) => a.consensusRank - b.consensusRank)
-      .forEach((p, i) => positionRanks.set(p.id, i + 1));
+    // Two-tier sort avoids ever comparing values from different scales directly: players with
+    // a genuine ESPN cross-analyst position rank sort by that first, then the rest fall back to
+    // the seed's overall order as a same-position proxy.
+    const withEspn = list
+      .filter((p) => p.positionAverageRankValue != null)
+      .sort((a, b) => a.positionAverageRankValue! - b.positionAverageRankValue!);
+    const withoutEspn = list
+      .filter((p) => p.positionAverageRankValue == null)
+      .sort((a, b) => a.consensusRank - b.consensusRank);
+    [...withEspn, ...withoutEspn].forEach((p, i) => positionRanks.set(p.id, i + 1));
   }
 
   const players: Player[] = merged.map((p) => ({
@@ -150,12 +156,15 @@ export function mergePlayers(
     team: p.team,
     byeWeek: p.byeWeek,
     consensusRank: p.consensusRank,
-    consensusSource: p.consensusSource,
     positionRank: positionRanks.get(p.id) ?? 0,
+    positionRankSource: p.positionRankSource,
+    positionRankAnalystCount: p.positionRankAnalystCount,
+    positionRankLow: p.positionRankLow,
+    positionRankHigh: p.positionRankHigh,
     adp: p.adp,
     espnAdp: p.espnAdp,
     ffcAdp: p.ffcAdp,
-    adpDelta: p.adpDelta,
+    adpWeeklyDelta: p.adpWeeklyDelta,
     adpHigh: p.adpHigh,
     adpLow: p.adpLow,
     adpStdev: p.adpStdev,
@@ -172,8 +181,8 @@ export function mergePlayers(
     players,
     matchedCount,
     matchedFromFfcCount,
-    espnAverageRankCount,
-    topTierEspnAverageRankCount,
+    positionRankEspnCount,
+    topTierPositionRankEspnCount,
     topTierCount,
     unmatchedNames,
   };

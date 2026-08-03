@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { buildRows, filterAndSortRows, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
+import { buildRows, filterAndSortRows, sortByAdpIds, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
 import type { BoardState, DraftStatus, Player } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
 import { PlayerTable } from "./PlayerTable";
 
 export interface BoardActions {
   reorderPlayer: (activeId: string, overId: string) => void;
-  resetToConsensus: (consensusOrderedIds: string[]) => void;
+  resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
 }
@@ -22,14 +22,16 @@ interface BoardShellProps {
 
 export function BoardShell({ players, board, hydrated, actions }: BoardShellProps) {
   const [editMode, setEditMode] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("mine");
+  const [sortKey, setSortKey] = useState<SortKey>("adp");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [filters, setFilters] = useState<FilterState>({ search: "", position: "ALL", hideDrafted: false });
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    position: "ALL",
+    hideDrafted: false,
+    onlyMine: false,
+  });
 
-  const consensusOrderedIds = useMemo(
-    () => players.slice().sort((a, b) => a.consensusRank - b.consensusRank).map((p) => p.id),
-    [players]
-  );
+  const adpOrderedIds = useMemo(() => sortByAdpIds(players), [players]);
 
   function handleSortChange(key: SortKey) {
     if (key === sortKey) {
@@ -63,7 +65,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={setEditMode}
-        onReset={() => actions.resetToConsensus(consensusOrderedIds)}
+        onReset={() => actions.resetOrder(adpOrderedIds)}
       />
       <div className="flex items-center justify-between px-3 py-2 font-mono text-[11px] text-ink-faint">
         <span>

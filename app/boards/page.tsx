@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
+import { sortByAdpIds } from "@/lib/derive";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useUserBoards, createBoard, renameBoard, deleteBoard, type BoardSummary } from "@/lib/firestoreBoards";
 import type { Player } from "@/lib/types";
@@ -107,14 +108,7 @@ function NewBoardForm({ uid }: { uid: string }) {
   const [creating, setCreating] = useState(false);
   const router = useRouter();
 
-  const consensusOrderedIds = useMemo(
-    () =>
-      (playersData.players as Player[])
-        .slice()
-        .sort((a, b) => a.consensusRank - b.consensusRank)
-        .map((p) => p.id),
-    []
-  );
+  const adpOrderedIds = useMemo(() => sortByAdpIds(playersData.players as Player[]), []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -122,7 +116,7 @@ function NewBoardForm({ uid }: { uid: string }) {
     if (!trimmed || creating) return;
     setCreating(true);
     try {
-      const id = await createBoard(uid, trimmed, consensusOrderedIds, playersData.season);
+      const id = await createBoard(uid, trimmed, adpOrderedIds, playersData.season);
       router.push(`/boards/${id}`);
     } finally {
       setCreating(false);

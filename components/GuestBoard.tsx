@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { sortByAdpIds } from "@/lib/derive";
 import { useBoardStore } from "@/lib/store";
 import type { Player } from "@/lib/types";
 import { BoardShell } from "./BoardShell";
@@ -9,10 +10,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
   const [hydrated, setHydrated] = useState(false);
   const store = useBoardStore();
 
-  const consensusOrderedIds = useMemo(
-    () => players.slice().sort((a, b) => a.consensusRank - b.consensusRank).map((p) => p.id),
-    [players]
-  );
+  const adpOrderedIds = useMemo(() => sortByAdpIds(players), [players]);
 
   useEffect(() => {
     const unsub = useBoardStore.persist.onFinishHydration(() => setHydrated(true));
@@ -21,7 +19,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
   }, []);
 
   useEffect(() => {
-    if (hydrated) store.initOrder(consensusOrderedIds);
+    if (hydrated) store.initOrder(adpOrderedIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
@@ -32,7 +30,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
       hydrated={hydrated}
       actions={{
         reorderPlayer: store.reorderPlayer,
-        resetToConsensus: store.resetToConsensus,
+        resetOrder: store.resetOrder,
         setDraftStatus: store.setDraftStatus,
         undraft: store.undraft,
       }}

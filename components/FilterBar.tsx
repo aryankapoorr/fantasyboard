@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, RotateCcw } from "lucide-react";
+import { Search, RotateCcw, Users } from "lucide-react";
 import type { Position } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
@@ -46,6 +46,18 @@ export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange
             </button>
           ))}
         </div>
+
+        <button
+          onClick={() => onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })}
+          aria-pressed={filters.onlyMine}
+          className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+            filters.onlyMine
+              ? "border-accent bg-accent/15 text-accent"
+              : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
+          }`}
+        >
+          <Users size={12} /> my team
+        </button>
       </div>
 
       <div className="flex items-center gap-4">
@@ -63,23 +75,23 @@ export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange
           onClick={onReset}
           className="flex items-center gap-1 font-mono text-[11px] text-ink-muted hover:text-ink"
         >
-          <RotateCcw size={12} /> reset to consensus
+          <RotateCcw size={12} /> reset to adp
         </button>
 
         <button
           onClick={() => onEditModeChange(!editMode)}
           role="switch"
           aria-checked={editMode}
-          className={`flex items-center gap-2 rounded border px-2.5 py-1.5 font-mono text-[11px] font-medium tracking-wide transition-colors ${
-            editMode ? "border-accent bg-accent text-accent-ink" : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
-          }`}
+          className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-wide text-ink-muted hover:text-ink"
         >
           <span
-            className={`relative inline-block h-3 w-5 rounded-full transition-colors ${editMode ? "bg-accent-ink/30" : "bg-hairline"}`}
+            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${
+              editMode ? "bg-accent" : "bg-hairline"
+            }`}
           >
             <span
-              className={`absolute top-0.5 h-2 w-2 rounded-full bg-current transition-transform ${
-                editMode ? "translate-x-2.5" : "translate-x-0.5"
+              className={`inline-block h-3 w-3 transform rounded-full bg-panel transition-transform ${
+                editMode ? "translate-x-3.5" : "translate-x-0.5"
               }`}
             />
           </span>

@@ -68,15 +68,15 @@ export function PlayerTable({
 
   return (
     <div className="overflow-hidden rounded-md border border-hairline">
-      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_9rem] gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
+      <div className="hidden grid-cols-[auto_4.5rem_minmax(0,1fr)_4.5rem_2.5rem_4.5rem_9rem] gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
         <div className="w-6" />
-        <HeaderCell label="Mine" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label="ADP" sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-left font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Player
         </div>
-        <HeaderCell label="Cons" sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
-        <HeaderCell label="ADP" sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
-        <HeaderCell label="Δ" sortKey="delta" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label="Rank" sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label="Mine" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label="Δ7d" sortKey="delta" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div />
       </div>
 

@@ -13,6 +13,7 @@ export interface FilterState {
   search: string;
   position: Position | "ALL";
   hideDrafted: boolean;
+  onlyMine: boolean;
 }
 
 export function buildRows(players: Player[], board: BoardState): BoardRow[] {
@@ -26,6 +27,15 @@ export function buildRows(players: Player[], board: BoardState): BoardRow[] {
   }));
 }
 
+// Default ordering for new boards and "reset to ADP": ADP ascending, undrafted-ADP players
+// fall back to consensusRank so they still land in a sensible spot instead of all at the end.
+export function sortByAdpIds(players: Player[]): string[] {
+  return players
+    .slice()
+    .sort((a, b) => (a.adp ?? 1000 + a.consensusRank) - (b.adp ?? 1000 + b.consensusRank))
+    .map((p) => p.id);
+}
+
 export function filterAndSortRows(
   rows: BoardRow[],
   filters: FilterState,
@@ -37,6 +47,7 @@ export function filterAndSortRows(
   let result = rows.filter((r) => {
     if (filters.position !== "ALL" && r.position !== filters.position) return false;
     if (filters.hideDrafted && r.draftStatus !== "available") return false;
+    if (filters.onlyMine && r.draftStatus !== "drafted_by_me") return false;
     if (query && !normalizeName(r.name).includes(query)) return false;
     return true;
   });
@@ -53,7 +64,7 @@ export function filterAndSortRows(
       case "adp":
         return (nullsLast(a.adp) - nullsLast(b.adp)) * dir;
       case "delta":
-        return (nullsLast(a.adpDelta) - nullsLast(b.adpDelta)) * dir;
+        return (nullsLast(a.adpWeeklyDelta) - nullsLast(b.adpWeeklyDelta)) * dir;
       case "name":
         return a.name.localeCompare(b.name) * dir;
       default:

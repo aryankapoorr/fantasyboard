@@ -67,7 +67,7 @@ export function useUserBoards(uid: string | null): { boards: BoardSummary[]; loa
 
 interface FirestoreBoardActions {
   reorderPlayer: (activeId: string, overId: string) => void;
-  resetToConsensus: (consensusOrderedIds: string[]) => void;
+  resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
   rename: (name: string) => void;
@@ -120,10 +120,10 @@ export function useFirestoreBoard(
         updatedAt: serverTimestamp(),
       });
     },
-    resetToConsensus: (consensusOrderedIds) => {
+    resetOrder: (orderedIds) => {
       if (!uid || !boardId) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
-        customOrder: consensusOrderedIds,
+        customOrder: orderedIds,
         updatedAt: serverTimestamp(),
       });
     },
@@ -159,13 +159,13 @@ export function useFirestoreBoard(
 export async function createBoard(
   uid: string,
   name: string,
-  consensusOrderedIds: string[],
+  orderedIds: string[],
   season: number
 ): Promise<string> {
   const ref = await addDoc(collection(db, "users", uid, "boards"), {
     name,
     season,
-    customOrder: consensusOrderedIds,
+    customOrder: orderedIds,
     draftPicks: {},
     nextPickNumber: 1,
     createdAt: serverTimestamp(),

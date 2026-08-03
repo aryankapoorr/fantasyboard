@@ -7,7 +7,7 @@ import type { BoardState, DraftStatus } from "./types";
 interface BoardActions {
   initOrder: (playerIds: string[]) => void;
   reorderPlayer: (activeId: string, overId: string) => void;
-  resetToConsensus: (consensusOrderedIds: string[]) => void;
+  resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
 }
@@ -40,8 +40,8 @@ export const useBoardStore = create<BoardStore>()(
         if (next) set({ customOrder: next });
       },
 
-      resetToConsensus: (consensusOrderedIds) => {
-        set({ customOrder: consensusOrderedIds });
+      resetOrder: (orderedIds) => {
+        set({ customOrder: orderedIds });
       },
 
       setDraftStatus: (playerId, status) => {

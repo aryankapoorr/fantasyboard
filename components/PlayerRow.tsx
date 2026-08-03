@@ -18,6 +18,27 @@ function adpTooltip(row: BoardRow): string | undefined {
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
+function rankTooltip(row: BoardRow): string {
+  const overall = `Overall #${row.consensusRank}: editorial ranking (data/seed/expert-rankings.json)`;
+  const positionLabel = `${row.position}${row.positionRank}`;
+  if (row.positionRankSource === "espn-analysts" && row.positionRankAnalystCount !== null) {
+    const range =
+      row.positionRankLow !== null && row.positionRankHigh !== null
+        ? ` (range ${row.positionRankLow}–${row.positionRankHigh})`
+        : "";
+    return `${overall}. Position ${positionLabel}: blended from ${row.positionRankAnalystCount} ESPN analysts${range}`;
+  }
+  return `${overall}. Position ${positionLabel}: editorial order (no analyst data for this player)`;
+}
+
+function rankSourceLabel(row: BoardRow): string {
+  const positionLabel = `${row.position}${row.positionRank}`;
+  if (row.positionRankSource === "espn-analysts" && row.positionRankAnalystCount) {
+    return `${positionLabel} ·${row.positionRankAnalystCount}`;
+  }
+  return `${positionLabel} ·edit`;
+}
+
 interface PlayerRowProps {
   row: BoardRow;
   editMode: boolean;
@@ -43,7 +64,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid grid-cols-[auto_2.5rem_1fr_auto_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_9rem] ${
+      className={`group grid grid-cols-[auto_3.5rem_1fr_auto_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_4.5rem_minmax(0,1fr)_4.5rem_2.5rem_4.5rem_9rem] ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
@@ -59,7 +80,9 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
         <GripVertical size={15} />
       </button>
 
-      <div className="font-mono text-sm font-medium tabular-nums text-ink">{row.mineRank}</div>
+      <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
+        {row.adp !== null ? row.adp.toFixed(1) : "—"}
+      </div>
 
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
         <div className="min-w-0">
@@ -75,17 +98,15 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
         </div>
       </div>
 
-      <div className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block">
-        #{row.consensusRank}
+      <div className="hidden text-right sm:block" title={rankTooltip(row)}>
+        <div className="font-mono text-sm tabular-nums text-ink-muted">#{row.consensusRank}</div>
+        <div className="font-mono text-[10px] tabular-nums text-ink-faint">{rankSourceLabel(row)}</div>
       </div>
-      <div
-        className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block"
-        title={adpTooltip(row)}
-      >
-        {row.adp !== null ? row.adp.toFixed(1) : "—"}
+      <div className="hidden text-right font-mono text-sm font-medium tabular-nums text-ink sm:block">
+        {row.mineRank}
       </div>
       <div className="hidden justify-self-end sm:block">
-        <StatDelta delta={row.adpDelta} />
+        <StatDelta delta={row.adpWeeklyDelta} />
       </div>
 
       <div className="col-span-4 flex items-center justify-end gap-1.5 sm:col-span-1">
