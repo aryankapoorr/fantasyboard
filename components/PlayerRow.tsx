@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Star, Undo2 } from "lucide-react";
 import { InjuryBadge } from "./InjuryBadge";
+import { PlayerAvatar } from "./PlayerAvatar";
 import { PositionBadge, positionEdgeColor } from "./PositionBadge";
 import { StatDelta } from "./StatDelta";
 import type { BoardRow } from "@/lib/derive";
@@ -97,15 +98,18 @@ export function PlayerRow({
       <div className="text-right font-mono text-sm font-medium tabular-nums text-ink">{row.mineRank}</div>
 
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
-        <button type="button" onClick={() => onOpenDetail(row.id)} className="min-w-0 text-left">
-          <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
-            {row.name}
-          </div>
-          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
-            <PositionBadge position={row.position} />
-            <span className="font-mono">{row.team}</span>
-            {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
-            {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
+        <button type="button" onClick={() => onOpenDetail(row.id)} className="flex min-w-0 items-center gap-2 text-left">
+          <PlayerAvatar player={row} size={30} />
+          <div className="min-w-0">
+            <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
+              {row.name}
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+              <PositionBadge position={row.position} />
+              <span className="font-mono">{row.team}</span>
+              {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
+              {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
+            </div>
           </div>
         </button>
       </div>

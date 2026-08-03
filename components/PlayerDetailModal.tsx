@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Star, X } from "lucide-react";
 import { InjuryBadge } from "./InjuryBadge";
+import { PlayerAvatar } from "./PlayerAvatar";
 import { PositionBadge } from "./PositionBadge";
 import { adpTooltip, rankTooltip } from "./PlayerRow";
 import { formatStatLine } from "@/lib/statLine";
@@ -56,13 +57,16 @@ export function PlayerDetailModal({
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-md border border-hairline bg-panel p-5 shadow-lg shadow-black/40"
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="font-display text-lg font-medium tracking-wide text-ink">{row.name}</div>
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
-              <PositionBadge position={row.position} />
-              <span className="font-mono">{row.team}</span>
-              {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
-              {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
+          <div className="flex min-w-0 items-center gap-3">
+            <PlayerAvatar player={row} size={56} />
+            <div className="min-w-0">
+              <div className="font-display text-lg font-medium tracking-wide text-ink">{row.name}</div>
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
+                <PositionBadge position={row.position} />
+                <span className="font-mono">{row.team}</span>
+                {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
+                {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
+              </div>
             </div>
           </div>
           <div className="flex flex-shrink-0 items-center gap-1.5">
