@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   deleteField,
@@ -70,6 +72,7 @@ interface FirestoreBoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  toggleFavorite: (playerId: string) => void;
   rename: (name: string) => void;
 }
 
@@ -143,6 +146,14 @@ export function useFirestoreBoard(
         updatedAt: serverTimestamp(),
       });
     },
+    toggleFavorite: (playerId) => {
+      if (!uid || !boardId || !doc_) return;
+      const isFavorite = (doc_.favorites ?? []).includes(playerId);
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        favorites: isFavorite ? arrayRemove(playerId) : arrayUnion(playerId),
+        updatedAt: serverTimestamp(),
+      });
+    },
     rename: (name) => {
       if (!uid || !boardId) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
@@ -170,6 +181,7 @@ export async function createBoard(
     draftPicks: {},
     nextPickNumber: 1,
     format,
+    favorites: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

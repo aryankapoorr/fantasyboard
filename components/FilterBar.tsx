@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, RotateCcw, Users } from "lucide-react";
+import { Search, RotateCcw, Star, Users } from "lucide-react";
 import type { Position } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
@@ -47,17 +47,31 @@ export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange
           ))}
         </div>
 
-        <button
-          onClick={() => onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })}
-          aria-pressed={filters.onlyMine}
-          className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
-            filters.onlyMine
-              ? "border-accent bg-accent/15 text-accent"
-              : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
-          }`}
-        >
-          <Users size={12} /> my team
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })}
+            aria-pressed={filters.onlyMine}
+            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+              filters.onlyMine
+                ? "border-accent bg-accent/15 text-accent"
+                : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
+            }`}
+          >
+            <Users size={12} /> my team
+          </button>
+
+          <button
+            onClick={() => onFiltersChange({ ...filters, onlyFavorites: !filters.onlyFavorites })}
+            aria-pressed={filters.onlyFavorites}
+            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+              filters.onlyFavorites
+                ? "border-accent bg-accent/15 text-accent"
+                : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
+            }`}
+          >
+            <Star size={12} fill={filters.onlyFavorites ? "currentColor" : "none"} /> favorites
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

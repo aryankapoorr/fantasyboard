@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Undo2 } from "lucide-react";
+import { GripVertical, Star, Undo2 } from "lucide-react";
 import { InjuryBadge } from "./InjuryBadge";
 import { PositionBadge, positionEdgeColor } from "./PositionBadge";
 import { StatDelta } from "./StatDelta";
@@ -49,9 +49,10 @@ interface PlayerRowProps {
   onDraftMe: (id: string) => void;
   onDraftOther: (id: string) => void;
   onUndraft: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
 }
 
-export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }: PlayerRowProps) {
+export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft, onToggleFavorite }: PlayerRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
     disabled: !editMode,
@@ -68,7 +69,7 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid grid-cols-[auto_2rem_1fr_3rem_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_9rem] ${
+      className={`group grid grid-cols-[auto_2rem_1fr_1.5rem_3rem_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
@@ -99,6 +100,17 @@ export function PlayerRow({ row, editMode, onDraftMe, onDraftOther, onUndraft }:
           </div>
         </div>
       </div>
+
+      <button
+        onClick={() => onToggleFavorite(row.id)}
+        aria-label={row.isFavorite ? `Unfavorite ${row.name}` : `Favorite ${row.name}`}
+        aria-pressed={row.isFavorite}
+        className={`flex h-6 w-6 items-center justify-center rounded hover:bg-panel-raised ${
+          row.isFavorite ? "text-accent" : "text-ink-faint hover:text-ink-muted"
+        }`}
+      >
+        <Star size={15} fill={row.isFavorite ? "currentColor" : "none"} />
+      </button>
 
       <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
         {row.adp !== null ? row.adp.toFixed(1) : "—"}

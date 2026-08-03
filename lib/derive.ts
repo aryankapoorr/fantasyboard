@@ -9,6 +9,7 @@ export type BoardRow = Omit<Player, "ppr" | "standard"> &
     format: RankingFormat;
     mineRank: number;
     draftStatus: DraftStatus;
+    isFavorite: boolean;
   };
 
 const FLEX_POSITIONS = new Set<Position>(["RB", "WR", "TE"]);
@@ -18,11 +19,13 @@ export interface FilterState {
   position: Position | "ALL" | "FLEX";
   hideDrafted: boolean;
   onlyMine: boolean;
+  onlyFavorites: boolean;
 }
 
 export function buildRows(players: Player[], board: BoardState, format: RankingFormat): BoardRow[] {
   const mineRanks = new Map<string, number>();
   board.customOrder.forEach((id, i) => mineRanks.set(id, i + 1));
+  const favorites = new Set(board.favorites ?? []);
 
   return players.map((p) => {
     const { ppr, standard, ...shared } = p;
@@ -33,6 +36,7 @@ export function buildRows(players: Player[], board: BoardState, format: RankingF
       format,
       mineRank: mineRanks.get(p.id) ?? bundle.consensusRank,
       draftStatus: board.draftPicks[p.id]?.status ?? "available",
+      isFavorite: favorites.has(p.id),
     };
   });
 }
@@ -63,6 +67,7 @@ export function filterAndSortRows(
     if (filters.position !== "ALL" && filters.position !== "FLEX" && r.position !== filters.position) return false;
     if (filters.hideDrafted && r.draftStatus !== "available") return false;
     if (filters.onlyMine && r.draftStatus !== "drafted_by_me") return false;
+    if (filters.onlyFavorites && !r.isFavorite) return false;
     if (query && !normalizeName(r.name).includes(query)) return false;
     return true;
   });

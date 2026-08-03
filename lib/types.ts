@@ -60,6 +60,7 @@ export interface BoardState {
   nextPickNumber: number;
   // Chosen once when the board is created; drives which format's rankings/ADP it shows.
   format: RankingFormat;
+  favorites: string[];
 }
 
 export interface SeedPlayer {

@@ -11,6 +11,7 @@ export interface BoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  toggleFavorite: (playerId: string) => void;
 }
 
 interface BoardShellProps {
@@ -31,6 +32,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     position: "ALL",
     hideDrafted: false,
     onlyMine: false,
+    onlyFavorites: false,
   });
 
   const adpOrderedIds = useMemo(() => sortByAdpIds(players, format), [players, format]);
@@ -99,6 +101,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           onDraftMe={(id) => actions.setDraftStatus(id, "drafted_by_me")}
           onDraftOther={(id) => actions.setDraftStatus(id, "drafted_by_other")}
           onUndraft={actions.undraft}
+          onToggleFavorite={actions.toggleFavorite}
         />
       </div>
     </div>

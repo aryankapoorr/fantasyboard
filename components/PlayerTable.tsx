@@ -17,6 +17,7 @@ interface PlayerTableProps {
   onDraftMe: (id: string) => void;
   onDraftOther: (id: string) => void;
   onUndraft: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
 }
 
 function HeaderCell({
@@ -59,6 +60,7 @@ export function PlayerTable({
   onDraftMe,
   onDraftOther,
   onUndraft,
+  onToggleFavorite,
 }: PlayerTableProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const formatLabel = format === "ppr" ? "PPR" : "STD";
@@ -72,12 +74,13 @@ export function PlayerTable({
 
   return (
     <div className="overflow-hidden rounded-md border border-hairline">
-      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_4.5rem_4.5rem_4.5rem_9rem] gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
+      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
         <div className="w-6" />
         <HeaderCell label="" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-left font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Player
         </div>
+        <div className="w-6" />
         <HeaderCell label={`ADP (${formatLabel})`} sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <HeaderCell label={`Rank (${formatLabel})`} sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <HeaderCell label="Δ7d" sortKey="delta" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
@@ -96,6 +99,7 @@ export function PlayerTable({
               onDraftMe={onDraftMe}
               onDraftOther={onDraftOther}
               onUndraft={onUndraft}
+              onToggleFavorite={onToggleFavorite}
             />
           ))}
         </SortableContext>

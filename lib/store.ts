@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./storage";
-import { computeDraftPickUpdate, spliceReorder } from "./boardOps";
+import { computeDraftPickUpdate, spliceReorder, toggleFavorite as toggleFavoriteId } from "./boardOps";
 import type { BoardState, DraftStatus, RankingFormat } from "./types";
 
 interface BoardActions {
@@ -13,6 +13,7 @@ interface BoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  toggleFavorite: (playerId: string) => void;
 }
 
 type BoardStore = BoardState & BoardActions;
@@ -24,6 +25,7 @@ export const useBoardStore = create<BoardStore>()(
       draftPicks: {},
       nextPickNumber: 1,
       format: "ppr",
+      favorites: [],
 
       chooseFormat: (format, orderedIds) => {
         set({ format, customOrder: orderedIds });
@@ -70,6 +72,11 @@ export const useBoardStore = create<BoardStore>()(
         const next = { ...draftPicks };
         delete next[playerId];
         set({ draftPicks: next });
+      },
+
+      toggleFavorite: (playerId) => {
+        const { favorites } = get();
+        set({ favorites: toggleFavoriteId(favorites, playerId) });
       },
     }),
     {

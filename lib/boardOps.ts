@@ -1,5 +1,9 @@
 import type { DraftPickState, DraftStatus } from "./types";
 
+export function toggleFavorite(favorites: string[], playerId: string): string[] {
+  return favorites.includes(playerId) ? favorites.filter((id) => id !== playerId) : [...favorites, playerId];
+}
+
 export function spliceReorder(order: string[], activeId: string, overId: string): string[] | null {
   const from = order.indexOf(activeId);
   const to = order.indexOf(overId);
