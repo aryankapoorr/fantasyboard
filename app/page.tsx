@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Radar, MousePointer2, ListChecks, RefreshCw } from "lucide-react";
+import { Radar, MousePointer2, ListChecks, RefreshCw, ImageIcon, StickyNote } from "lucide-react";
 import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
+import { PlayerAvatar } from "@/components/PlayerAvatar";
 import { PositionBadge } from "@/components/PositionBadge";
 import { StatDelta } from "@/components/StatDelta";
 import type { Player } from "@/lib/types";
@@ -15,6 +16,11 @@ const FEATURES = [
     icon: Radar,
     title: "Consensus + live ADP",
     body: "Expert consensus rankings merged with real-time average draft position, so you always know where the market sits.",
+  },
+  {
+    icon: ImageIcon,
+    title: "See every face, not just a name",
+    body: "Real player photos next to every row. Click any name for projections, last season's stats, and their full draft signal.",
   },
   {
     icon: MousePointer2,
@@ -27,6 +33,11 @@ const FEATURES = [
     body: "Mark picks as they happen — yours or an opponent's — and watch the board update instantly.",
   },
   {
+    icon: StickyNote,
+    title: "Favorite players, keep notes",
+    body: "Star your targets and jot a note on anyone — \"buy the dip,\" \"contract dispute\" — saved right on your board.",
+  },
+  {
     icon: RefreshCw,
     title: "Save every board",
     body: "Sign in with Google to create and name multiple boards, synced in real time across every device.",
@@ -35,8 +46,9 @@ const FEATURES = [
 
 function PreviewRow({ player }: { player: Player }) {
   return (
-    <div className="grid grid-cols-[1.5rem_1fr_3rem_3rem] items-center gap-3 border-b border-hairline px-3 py-2 last:border-b-0">
+    <div className="grid grid-cols-[1.5rem_auto_1fr_3rem_3rem] items-center gap-3 border-b border-hairline px-3 py-2 last:border-b-0">
       <div className="font-mono text-xs tabular-nums text-ink-faint">{player.ppr.consensusRank}</div>
+      <PlayerAvatar player={player} size={26} />
       <div className="flex min-w-0 items-center gap-2">
         <PositionBadge position={player.position} />
         <span className="truncate font-display text-sm font-medium tracking-wide text-ink">{player.name}</span>
@@ -131,7 +143,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-20 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map(({ icon: Icon, title, body }) => (
             <div key={title} className="rounded-md border border-hairline bg-panel p-4">
               <Icon size={18} className="text-accent" />

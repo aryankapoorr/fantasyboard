@@ -40,7 +40,7 @@ function HeaderCell({
   return (
     <button
       onClick={() => onClick(sortKey)}
-      className={`text-right font-mono text-[11px] font-medium uppercase tracking-wider transition-colors ${
+      className={`w-full text-right font-mono text-[11px] font-medium uppercase tracking-wider transition-colors ${
         isActive ? "text-accent" : "text-ink-faint hover:text-ink-muted"
       } ${className}`}
     >
@@ -76,9 +76,9 @@ export function PlayerTable({
 
   return (
     <div className="overflow-hidden rounded-md border border-hairline">
-      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
+      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] items-start gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
         <div className="w-6" />
-        <HeaderCell label="" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label="Rank" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-left font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Player
         </div>
