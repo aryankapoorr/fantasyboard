@@ -6,14 +6,9 @@ import { useAuth } from "@/lib/auth";
 
 interface SiteHeaderProps {
   mode: "landing" | "guest" | "dashboard" | "board";
-  syncedAt?: string;
   season?: number;
   backHref?: string;
   backLabel?: string;
-}
-
-function formatSyncDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function UserBadge() {
@@ -52,7 +47,7 @@ function UserBadge() {
   );
 }
 
-export function SiteHeader({ mode, syncedAt, season, backHref, backLabel }: SiteHeaderProps) {
+export function SiteHeader({ mode, season, backHref, backLabel }: SiteHeaderProps) {
   return (
     <header className="border-b border-hairline bg-panel px-4 py-3">
       <div className="mx-auto flex max-w-5xl items-center justify-between">
@@ -75,14 +70,9 @@ export function SiteHeader({ mode, syncedAt, season, backHref, backLabel }: Site
 
         <div className="flex items-center gap-3">
           {mode === "guest" && (
-            <>
-              <Link href="/" className="font-mono text-[11px] text-accent hover:text-accent-hover">
-                sign in to save boards →
-              </Link>
-              {syncedAt && (
-                <span className="font-mono text-[11px] text-ink-faint">synced {formatSyncDate(syncedAt)}</span>
-              )}
-            </>
+            <Link href="/" className="font-mono text-[11px] text-accent hover:text-accent-hover">
+              sign in to save boards →
+            </Link>
           )}
           {(mode === "dashboard" || mode === "board") && <UserBadge />}
         </div>
