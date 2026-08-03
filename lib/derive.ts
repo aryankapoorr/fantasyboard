@@ -1,13 +1,15 @@
 import { normalizeName } from "./normalize";
-import type { BoardState, DraftStatus, Player, Position } from "./types";
+import type { BoardState, DraftStatus, Player, Position, RankingFormat } from "./types";
 
 export type SortKey = "mine" | "consensus" | "adp" | "delta" | "name";
 export type SortDir = "asc" | "desc";
 
-export interface BoardRow extends Player {
-  mineRank: number;
-  draftStatus: DraftStatus;
-}
+export type BoardRow = Omit<Player, "ppr" | "standard"> &
+  Player["ppr"] & {
+    format: RankingFormat;
+    mineRank: number;
+    draftStatus: DraftStatus;
+  };
 
 const FLEX_POSITIONS = new Set<Position>(["RB", "WR", "TE"]);
 
@@ -18,23 +20,33 @@ export interface FilterState {
   onlyMine: boolean;
 }
 
-export function buildRows(players: Player[], board: BoardState): BoardRow[] {
+export function buildRows(players: Player[], board: BoardState, format: RankingFormat): BoardRow[] {
   const mineRanks = new Map<string, number>();
   board.customOrder.forEach((id, i) => mineRanks.set(id, i + 1));
 
-  return players.map((p) => ({
-    ...p,
-    mineRank: mineRanks.get(p.id) ?? p.consensusRank,
-    draftStatus: board.draftPicks[p.id]?.status ?? "available",
-  }));
+  return players.map((p) => {
+    const { ppr, standard, ...shared } = p;
+    const bundle = format === "ppr" ? ppr : standard;
+    return {
+      ...shared,
+      ...bundle,
+      format,
+      mineRank: mineRanks.get(p.id) ?? bundle.consensusRank,
+      draftStatus: board.draftPicks[p.id]?.status ?? "available",
+    };
+  });
 }
 
 // Default ordering for new boards and "reset to ADP": ADP ascending, undrafted-ADP players
 // fall back to consensusRank so they still land in a sensible spot instead of all at the end.
-export function sortByAdpIds(players: Player[]): string[] {
+export function sortByAdpIds(players: Player[], format: RankingFormat): string[] {
   return players
     .slice()
-    .sort((a, b) => (a.adp ?? 1000 + a.consensusRank) - (b.adp ?? 1000 + b.consensusRank))
+    .sort((a, b) => {
+      const av = a[format];
+      const bv = b[format];
+      return (av.adp ?? 1000 + av.consensusRank) - (bv.adp ?? 1000 + bv.consensusRank);
+    })
     .map((p) => p.id);
 }
 

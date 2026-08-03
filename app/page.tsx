@@ -36,17 +36,17 @@ const FEATURES = [
 function PreviewRow({ player }: { player: Player }) {
   return (
     <div className="grid grid-cols-[1.5rem_1fr_3rem_3rem] items-center gap-3 border-b border-hairline px-3 py-2 last:border-b-0">
-      <div className="font-mono text-xs tabular-nums text-ink-faint">{player.consensusRank}</div>
+      <div className="font-mono text-xs tabular-nums text-ink-faint">{player.ppr.consensusRank}</div>
       <div className="flex min-w-0 items-center gap-2">
         <PositionBadge position={player.position} />
         <span className="truncate font-display text-sm font-medium tracking-wide text-ink">{player.name}</span>
         <span className="font-mono text-[11px] text-ink-faint">{player.team}</span>
       </div>
       <div className="text-right font-mono text-xs tabular-nums text-ink-muted">
-        {player.adp !== null ? player.adp.toFixed(1) : "—"}
+        {player.ppr.adp !== null ? player.ppr.adp.toFixed(1) : "—"}
       </div>
       <div className="justify-self-end">
-        <StatDelta delta={player.adpWeeklyDelta} />
+        <StatDelta delta={player.ppr.adpWeeklyDelta} />
       </div>
     </div>
   );
@@ -123,7 +123,7 @@ export default function Home() {
 
           <div className="overflow-hidden rounded-md border border-hairline bg-panel shadow-lg shadow-black/20">
             <div className="border-b border-hairline bg-panel-raised px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-ink-faint">
-              {playersData.season} consensus top 5
+              {playersData.season} PPR consensus top 5
             </div>
             {previewPlayers.map((p) => (
               <PreviewRow key={p.id} player={p} />

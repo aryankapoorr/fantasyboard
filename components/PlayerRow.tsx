@@ -9,26 +9,30 @@ import { StatDelta } from "./StatDelta";
 import type { BoardRow } from "@/lib/derive";
 
 function adpTooltip(row: BoardRow): string | undefined {
-  const parts: string[] = [];
-  if (row.espnAdp !== null) parts.push(`ESPN ${row.espnAdp.toFixed(1)}`);
-  if (row.ffcAdp !== null) parts.push(`FFC ${row.ffcAdp.toFixed(1)}`);
+  const formatLabel = row.format === "ppr" ? "PPR" : "standard";
+  const parts: string[] = [`FantasyFootballCalculator ${formatLabel} ADP`];
   if (row.adpStdev !== null && row.adpSampleSize !== null) {
     parts.push(`σ${row.adpStdev.toFixed(1)} (n=${row.adpSampleSize})`);
   }
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  if (row.espnAdp !== null) parts.push(`ESPN aggregate ADP (format unspecified): ${row.espnAdp.toFixed(1)}`);
+  return parts.join(" · ");
 }
 
 function rankTooltip(row: BoardRow): string {
-  const overall = `Overall #${row.consensusRank}: editorial ranking (data/seed/expert-rankings.json)`;
+  const formatLabel = row.format === "ppr" ? "PPR" : "standard";
+  const overall =
+    row.consensusSource === "espn"
+      ? `Overall #${row.consensusRank} (${formatLabel}): ESPN's cross-position ${formatLabel} consensus`
+      : `Overall #${row.consensusRank} (${formatLabel}): editorial fallback (data/seed/expert-rankings.json)`;
   const positionLabel = `${row.position}${row.positionRank}`;
   if (row.positionRankSource === "espn-analysts" && row.positionRankAnalystCount !== null) {
     const range =
       row.positionRankLow !== null && row.positionRankHigh !== null
         ? ` (range ${row.positionRankLow}–${row.positionRankHigh})`
         : "";
-    return `${overall}. Position ${positionLabel}: blended from ${row.positionRankAnalystCount} ESPN analysts${range}`;
+    return `${overall}. Position ${positionLabel}: blended from ${row.positionRankAnalystCount} ${formatLabel}-labeled ESPN analysts${range}`;
   }
-  return `${overall}. Position ${positionLabel}: editorial order (no analyst data for this player)`;
+  return `${overall}. Position ${positionLabel}: editorial order (no ${formatLabel}-labeled analyst data for this player)`;
 }
 
 function rankSourceLabel(row: BoardRow): string {

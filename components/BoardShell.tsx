@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { buildRows, filterAndSortRows, sortByAdpIds, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
+import { useRankingFormat } from "@/lib/rankingFormat";
 import type { BoardState, DraftStatus, Player } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
 import { PlayerTable } from "./PlayerTable";
@@ -24,6 +25,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   const [editMode, setEditMode] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("adp");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [format, setFormat] = useRankingFormat();
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     position: "ALL",
@@ -31,7 +33,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     onlyMine: false,
   });
 
-  const adpOrderedIds = useMemo(() => sortByAdpIds(players), [players]);
+  const adpOrderedIds = useMemo(() => sortByAdpIds(players, format), [players, format]);
 
   function handleSortChange(key: SortKey) {
     if (key === sortKey) {
@@ -54,9 +56,9 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
 
   const rows = useMemo(() => {
     if (!hydrated) return [];
-    const built = buildRows(players, board);
+    const built = buildRows(players, board, format);
     return filterAndSortRows(built, filters, sortKey, sortDir);
-  }, [hydrated, players, board, filters, sortKey, sortDir]);
+  }, [hydrated, players, board, filters, sortKey, sortDir, format]);
 
   if (!hydrated) {
     return (
@@ -75,6 +77,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={handleEditModeChange}
+        format={format}
+        onFormatChange={setFormat}
         onReset={() => actions.resetOrder(adpOrderedIds)}
       />
       <div
@@ -91,6 +95,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           editMode={editMode}
           sortKey={sortKey}
           sortDir={sortDir}
+          format={format}
           onSortChange={handleSortChange}
           onReorder={actions.reorderPlayer}
           onDraftMe={(id) => actions.setDraftStatus(id, "drafted_by_me")}

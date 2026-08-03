@@ -16,23 +16,33 @@ export interface EspnProTeam {
   byeWeek: number | null;
 }
 
+export interface EspnFormatRank {
+  // draftRanksByRankType[format].rank — ESPN's own cross-position overall rank for this format
+  // (verified live: kickers/DST land ~230+, not scoped per-position like positionAverageRank below).
+  overallRank: number | null;
+  // rankings["0"]'s synthetic rankSourceId:0 entry for this rankType — scoped PER POSITION
+  // (e.g. K1, DST1, TE1 all land near 1), NOT an overall cross-position rank.
+  positionAverageRank: number | null;
+  positionRankAnalystCount: number;
+  positionRankLow: number | null;
+  positionRankHigh: number | null;
+}
+
 export interface EspnPlayer {
   espnId: number;
   fullName: string;
   position: Position | null;
   team: string;
   byeWeek: number | null;
+  // ESPN's own ADP isn't labeled PPR/standard and is identical regardless of requested scoring
+  // segment (verified live across leaguedefaults/1,3,5,6,7,8) — kept as a neutral reference only.
   adp: number | null;
   adpTrendPct: number | null;
   percentOwned: number | null;
   auctionValue: number | null;
-  // ESPN's rankSourceId:0 "averageRank" is scoped per position/slot (e.g. K1, DST1, TE1 all
-  // land near 1), NOT an overall cross-position rank — only usable for positionRank.
-  positionAverageRank: number | null;
-  positionRankAnalystCount: number;
-  positionRankLow: number | null;
-  positionRankHigh: number | null;
   injuryStatus: string | null;
+  ppr: EspnFormatRank;
+  standard: EspnFormatRank;
 }
 
 async function fetchJson(url: string, headers?: Record<string, string>): Promise<unknown> {
@@ -78,33 +88,26 @@ interface RawPlayerPoolResponse {
         auctionValueAverage?: number;
       };
       rankings?: Record<string, RawRankingEntry[]>;
+      draftRanksByRankType?: Record<string, { rank: number }>;
     };
   }[];
 }
 
-interface PositionRankInfo {
-  positionAverageRank: number | null;
-  analystCount: number;
-  low: number | null;
-  high: number | null;
-}
-
-// rankings["0"] mixes one synthetic self-average entry per rankType (rankSourceId 0) with
-// one entry per contributing outside analyst. Analysts mostly only submit a PPR-labeled rank
-// (not STANDARD), so counting/ranging is done across all rankTypes to reflect true analyst
-// coverage; only the synthetic STANDARD entry is used for the single averageRank value, to
-// stay consistent with the STANDARD sort filter used elsewhere in this fetch.
-function extractPositionRankInfo(rankings: Record<string, RawRankingEntry[]> | undefined): PositionRankInfo {
-  const entries = rankings?.["0"] ?? [];
-  const synthetic = entries.find((e) => e.rankSourceId === 0 && e.rankType === "STANDARD");
-  const analystEntries = entries.filter((e) => e.rankSourceId !== 0);
+// rankings["0"] mixes one synthetic self-average entry per rankType (rankSourceId 0) with one
+// entry per contributing outside analyst. Filtering strictly by rankType keeps PPR and STANDARD
+// counts/ranges from ever crossing — analysts overwhelmingly only submit a PPR-labeled rank, so
+// STANDARD analyst coverage below is expected to be sparse; that's a true reflection of ESPN's
+// data, not a bug.
+function extractFormatRankInfo(entries: RawRankingEntry[], rankType: "PPR" | "STANDARD"): Omit<EspnFormatRank, "overallRank"> {
+  const synthetic = entries.find((e) => e.rankSourceId === 0 && e.rankType === rankType);
+  const analystEntries = entries.filter((e) => e.rankSourceId !== 0 && e.rankType === rankType);
   const analystIds = new Set(analystEntries.map((e) => e.rankSourceId));
   const ranks = analystEntries.map((e) => e.rank).filter((r) => typeof r === "number" && r > 0);
   return {
     positionAverageRank: typeof synthetic?.averageRank === "number" ? synthetic.averageRank : null,
-    analystCount: analystIds.size,
-    low: ranks.length > 0 ? Math.min(...ranks) : null,
-    high: ranks.length > 0 ? Math.max(...ranks) : null,
+    positionRankAnalystCount: analystIds.size,
+    positionRankLow: ranks.length > 0 ? Math.min(...ranks) : null,
+    positionRankHigh: ranks.length > 0 ? Math.max(...ranks) : null,
   };
 }
 
@@ -126,7 +129,7 @@ export async function fetchPlayerPool(season: number, limit = 400): Promise<Espn
   const filter = {
     players: {
       limit,
-      sortDraftRanks: { sortPriority: 1, sortAsc: true, value: "STANDARD" },
+      sortDraftRanks: { sortPriority: 1, sortAsc: true, value: "PPR" },
     },
   };
   const data = (await fetchJson(url, { "X-Fantasy-Filter": JSON.stringify(filter) })) as RawPlayerPoolResponse;
@@ -138,7 +141,9 @@ export async function fetchPlayerPool(season: number, limit = 400): Promise<Espn
     if (!p) continue;
     const team = proTeams.get(p.proTeamId);
     const ownership = p.ownership ?? {};
-    const positionRankInfo = extractPositionRankInfo(p.rankings);
+    const rankingEntries = p.rankings?.["0"] ?? [];
+    const pprInfo = extractFormatRankInfo(rankingEntries, "PPR");
+    const stdInfo = extractFormatRankInfo(rankingEntries, "STANDARD");
     players.push({
       espnId: p.id,
       fullName: p.fullName,
@@ -152,11 +157,9 @@ export async function fetchPlayerPool(season: number, limit = 400): Promise<Espn
           : null,
       percentOwned: typeof ownership.percentOwned === "number" ? ownership.percentOwned : null,
       auctionValue: typeof ownership.auctionValueAverage === "number" ? ownership.auctionValueAverage : null,
-      positionAverageRank: positionRankInfo.positionAverageRank,
-      positionRankAnalystCount: positionRankInfo.analystCount,
-      positionRankLow: positionRankInfo.low,
-      positionRankHigh: positionRankInfo.high,
       injuryStatus: p.injuryStatus ?? null,
+      ppr: { overallRank: p.draftRanksByRankType?.PPR?.rank ?? null, ...pprInfo },
+      standard: { overallRank: p.draftRanksByRankType?.STANDARD?.rank ?? null, ...stdInfo },
     });
   }
   return players;

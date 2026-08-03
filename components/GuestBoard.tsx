@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { sortByAdpIds } from "@/lib/derive";
+import { useRankingFormat } from "@/lib/rankingFormat";
 import { useBoardStore } from "@/lib/store";
 import type { Player } from "@/lib/types";
 import { BoardShell } from "./BoardShell";
@@ -9,8 +10,9 @@ import { BoardShell } from "./BoardShell";
 export function GuestBoard({ players }: { players: Player[] }) {
   const [hydrated, setHydrated] = useState(false);
   const store = useBoardStore();
+  const [format] = useRankingFormat();
 
-  const adpOrderedIds = useMemo(() => sortByAdpIds(players), [players]);
+  const adpOrderedIds = useMemo(() => sortByAdpIds(players, format), [players, format]);
 
   useEffect(() => {
     const unsub = useBoardStore.persist.onFinishHydration(() => setHydrated(true));

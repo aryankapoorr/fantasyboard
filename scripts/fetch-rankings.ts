@@ -5,18 +5,23 @@ import { z } from "zod";
 import { fetchPlayerPool } from "./lib/espn";
 import { fetchFfcAdp } from "./lib/ffc";
 import { mergePlayers, round1 } from "./lib/merge";
-import type { PlayersFile, SeedPlayer } from "../lib/types";
+import type { PlayersFile, RankingFormat, SeedPlayer } from "../lib/types";
 
-// ESPN only ships cross-analyst position-blended ranks for its own top-ranked players
-// (coverage tapers off for bench/K/DST), so this is checked against the seed's top tier,
-// where coverage is observed to be ~98% under normal conditions, not the full seed list.
-const MIN_TOP_TIER_POSITION_RANK_ESPN_RATE = 0.85;
+// ESPN only ships cross-position/analyst-blended ranks with real confidence for its own
+// top-ranked players (coverage tapers off for bench/K/DST), so this is checked against the
+// seed's top tier, where coverage is observed to be ~98% under normal conditions, not the full
+// seed list. STANDARD-format analyst position-rank coverage is expected to be near-zero (ESPN's
+// contributing analysts overwhelmingly only submit PPR ranks) so only the consensus (overall)
+// and PPR position-rank thresholds are enforced as hard safety nets.
+const MIN_TOP_TIER_CONSENSUS_ESPN_RATE = 0.85;
+const MIN_TOP_TIER_PPR_POSITION_RANK_ESPN_RATE = 0.85;
 
 // The "vs last week" delta is computed against a rolling anchor snapshot that only gets
 // replaced once it's at least this old, so it always reflects roughly a week of movement.
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const POSITIONS = ["QB", "RB", "WR", "TE", "K", "DST"] as const;
+const FORMATS: RankingFormat[] = ["ppr", "standard"];
 
 const seedPlayerSchema = z.object({
   rank: z.number().int().positive(),
@@ -52,42 +57,53 @@ async function main() {
 
   console.log(`Fetching ESPN player pool for season ${season}...`);
   const espnPlayers = await fetchPlayerPool(season, 1000);
-  console.log(`Fetched ${espnPlayers.length} ESPN players.`);
+  console.log(`Fetched ${espnPlayers.length} ESPN players (carries both PPR and STANDARD ranks).`);
 
-  console.log(`Fetching FantasyFootballCalculator ADP for season ${season}...`);
-  const ffcPlayers = await fetchFfcAdp(season);
-  console.log(`Fetched ${ffcPlayers.length} FFC players.`);
+  console.log(`Fetching FantasyFootballCalculator ADP (PPR and standard) for season ${season}...`);
+  const ffcPpr = await fetchFfcAdp(season, "ppr");
+  const ffcStandard = await fetchFfcAdp(season, "standard");
+  console.log(`Fetched ${ffcPpr.length} FFC PPR players, ${ffcStandard.length} FFC standard players.`);
 
-  const {
-    players,
-    matchedCount,
-    matchedFromFfcCount,
-    positionRankEspnCount,
-    topTierPositionRankEspnCount,
-    topTierCount,
-    unmatchedNames,
-  } = mergePlayers(seed, espnPlayers, ffcPlayers, aliases);
-
-  const espnPct = ((matchedCount / seed.length) * 100).toFixed(1);
-  const ffcPct = ((matchedFromFfcCount / seed.length) * 100).toFixed(1);
-  const positionRankEspnPct = ((positionRankEspnCount / seed.length) * 100).toFixed(1);
-  const topTierRate = topTierCount > 0 ? topTierPositionRankEspnCount / topTierCount : 1;
-  const topTierPct = (topTierRate * 100).toFixed(1);
-  console.log(`Matched ${matchedCount}/${seed.length} (${espnPct}%) seed players to ESPN data.`);
-  console.log(`Matched ${matchedFromFfcCount}/${seed.length} (${ffcPct}%) seed players to FFC data.`);
-  console.log(
-    `Position rank from ESPN analyst blend: ${positionRankEspnCount}/${seed.length} overall (${positionRankEspnPct}%), ${topTierPositionRankEspnCount}/${topTierCount} (${topTierPct}%) within the top tier; rest fell back to editorial order.`
+  const { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage } = mergePlayers(
+    seed,
+    espnPlayers,
+    { ppr: ffcPpr, standard: ffcStandard },
+    aliases
   );
+
+  const espnPct = ((matchedFromEspnCount / seed.length) * 100).toFixed(1);
+  console.log(`Matched ${matchedFromEspnCount}/${seed.length} (${espnPct}%) seed players to ESPN data.`);
+
+  for (const format of FORMATS) {
+    const c = coverage[format];
+    const consensusPct = ((c.consensusEspnCount / seed.length) * 100).toFixed(1);
+    const topTierConsensusRate = topTierCount > 0 ? c.topTierConsensusEspnCount / topTierCount : 1;
+    const positionRankPct = ((c.positionRankEspnCount / seed.length) * 100).toFixed(1);
+    const topTierPositionRankRate = topTierCount > 0 ? c.topTierPositionRankEspnCount / topTierCount : 1;
+    const ffcPct = ((c.ffcMatchedCount / seed.length) * 100).toFixed(1);
+    console.log(
+      `[${format}] consensus from ESPN: ${c.consensusEspnCount}/${seed.length} (${consensusPct}%), ${(topTierConsensusRate * 100).toFixed(1)}% within top tier. ` +
+        `positionRank from ESPN: ${c.positionRankEspnCount}/${seed.length} (${positionRankPct}%), ${(topTierPositionRankRate * 100).toFixed(1)}% within top tier. ` +
+        `FFC ADP matched: ${c.ffcMatchedCount}/${seed.length} (${ffcPct}%).`
+    );
+
+    if (format === "ppr" && topTierPositionRankRate < MIN_TOP_TIER_PPR_POSITION_RANK_ESPN_RATE) {
+      console.error(
+        `[ppr] Top-tier ESPN position-rank coverage (${(topTierPositionRankRate * 100).toFixed(1)}%) is below the ${(MIN_TOP_TIER_PPR_POSITION_RANK_ESPN_RATE * 100).toFixed(0)}% safety threshold — ESPN's rankings response may have changed shape. Refusing to write data/players.json.`
+      );
+      process.exit(1);
+    }
+    if (topTierConsensusRate < MIN_TOP_TIER_CONSENSUS_ESPN_RATE) {
+      console.error(
+        `[${format}] Top-tier ESPN consensus coverage (${(topTierConsensusRate * 100).toFixed(1)}%) is below the ${(MIN_TOP_TIER_CONSENSUS_ESPN_RATE * 100).toFixed(0)}% safety threshold — ESPN's draftRanksByRankType response may have changed shape. Refusing to write data/players.json.`
+      );
+      process.exit(1);
+    }
+  }
+
   if (unmatchedNames.length > 0) {
     console.log("Unmatched ESPN names (add to data/seed/name-aliases.json if needed):");
     for (const name of unmatchedNames) console.log(`  - ${name}`);
-  }
-
-  if (topTierRate < MIN_TOP_TIER_POSITION_RANK_ESPN_RATE) {
-    console.error(
-      `Top-tier ESPN position-rank coverage (${topTierPct}%) is below the ${(MIN_TOP_TIER_POSITION_RANK_ESPN_RATE * 100).toFixed(0)}% safety threshold — ESPN's rankings response may have changed shape. Refusing to write data/players.json.`
-    );
-    process.exit(1);
   }
 
   // Roll the weekly anchor forward: keep comparing against the same snapshot until it's at
@@ -112,10 +128,14 @@ async function main() {
     console.log("No weekly anchor snapshot yet; ADP weekly deltas will be null this run.");
   }
 
-  const anchorAdpById = new Map((anchor?.players ?? []).map((p) => [p.id, p.adp]));
+  const anchorById = new Map((anchor?.players ?? []).map((p) => [p.id, p]));
   for (const p of players) {
-    const previousAdp = anchorAdpById.get(p.id) ?? null;
-    p.adpWeeklyDelta = previousAdp != null && p.adp != null ? round1(previousAdp - p.adp) : null;
+    const anchorPlayer = anchorById.get(p.id);
+    for (const format of FORMATS) {
+      const previousAdp = anchorPlayer?.[format]?.adp ?? null;
+      const currentAdp = p[format].adp;
+      p[format].adpWeeklyDelta = previousAdp != null && currentAdp != null ? round1(previousAdp - currentAdp) : null;
+    }
   }
 
   const output: PlayersFile = {

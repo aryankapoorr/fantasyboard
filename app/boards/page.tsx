@@ -7,6 +7,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
 import { sortByAdpIds } from "@/lib/derive";
+import { useRankingFormat } from "@/lib/rankingFormat";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useUserBoards, createBoard, renameBoard, deleteBoard, type BoardSummary } from "@/lib/firestoreBoards";
 import type { Player } from "@/lib/types";
@@ -107,8 +108,9 @@ function NewBoardForm({ uid }: { uid: string }) {
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
   const router = useRouter();
+  const [format] = useRankingFormat();
 
-  const adpOrderedIds = useMemo(() => sortByAdpIds(playersData.players as Player[]), []);
+  const adpOrderedIds = useMemo(() => sortByAdpIds(playersData.players as Player[], format), [format]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

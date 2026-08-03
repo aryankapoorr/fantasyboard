@@ -4,12 +4,14 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { PlayerRow } from "./PlayerRow";
 import type { BoardRow, SortDir, SortKey } from "@/lib/derive";
+import type { RankingFormat } from "@/lib/types";
 
 interface PlayerTableProps {
   rows: BoardRow[];
   editMode: boolean;
   sortKey: SortKey;
   sortDir: SortDir;
+  format: RankingFormat;
   onSortChange: (key: SortKey) => void;
   onReorder: (activeId: string, overId: string) => void;
   onDraftMe: (id: string) => void;
@@ -51,6 +53,7 @@ export function PlayerTable({
   editMode,
   sortKey,
   sortDir,
+  format,
   onSortChange,
   onReorder,
   onDraftMe,
@@ -58,6 +61,7 @@ export function PlayerTable({
   onUndraft,
 }: PlayerTableProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const formatLabel = format === "ppr" ? "PPR" : "STD";
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -74,8 +78,8 @@ export function PlayerTable({
         <div className="text-left font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Player
         </div>
-        <HeaderCell label="ADP" sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
-        <HeaderCell label="Rank" sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label={`ADP (${formatLabel})`} sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label={`Rank (${formatLabel})`} sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <HeaderCell label="Δ7d" sortKey="delta" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-right font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Drafted

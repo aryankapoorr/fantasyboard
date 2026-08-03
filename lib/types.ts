@@ -1,5 +1,25 @@
 export type Position = "QB" | "RB" | "WR" | "TE" | "K" | "DST";
 
+export type RankingFormat = "ppr" | "standard";
+
+// All numbers in here come from a single scoring format's data — never blended across formats.
+// See scripts/lib/merge.ts for how each field is sourced per format.
+export interface RankingBundle {
+  consensusRank: number; // dense 1..N overall cross-position rank within the tracked universe
+  consensusSource: "espn" | "editorial"; // espn = ESPN's own cross-position rank for this format; editorial = seed fallback
+  positionRank: number; // 1-based within position
+  positionRankSource: "espn-analysts" | "editorial";
+  positionRankAnalystCount: number | null; // distinct outside analysts who submitted a rank in THIS format
+  positionRankLow: number | null; // lowest (best) individual analyst rank, this format only
+  positionRankHigh: number | null; // highest (worst) individual analyst rank, this format only
+  adp: number | null; // FantasyFootballCalculator ADP for this format only
+  adpWeeklyDelta: number | null; // (adp ~7 days ago) - (adp now); positive = rising (ADP dropped)
+  adpHigh: number | null;
+  adpLow: number | null;
+  adpStdev: number | null;
+  adpSampleSize: number | null; // FFC times_drafted
+}
+
 export interface Player {
   id: string; // espn id if matched, else `slug:<name>-<team>`
   espnId: number | null;
@@ -7,26 +27,17 @@ export interface Player {
   position: Position;
   team: string; // uppercase abbrev, "FA" if unrostered
   byeWeek: number | null;
-  consensusRank: number; // overall cross-position rank, from the curated seed file (data/seed/expert-rankings.json)
-  positionRank: number; // 1-based within position; from ESPN's cross-analyst position-blended rank when available
-  positionRankSource: "espn-analysts" | "editorial";
-  positionRankAnalystCount: number | null; // distinct outside analysts contributing, when source is espn-analysts
-  positionRankLow: number | null; // lowest (best) individual analyst rank
-  positionRankHigh: number | null; // highest (worst) individual analyst rank
-  adp: number | null; // blended average of espnAdp/ffcAdp (or whichever is available)
-  espnAdp: number | null;
-  ffcAdp: number | null;
-  adpWeeklyDelta: number | null; // (adp ~7 days ago) - (adp now); positive = rising (ADP dropped)
-  adpHigh: number | null; // from FantasyFootballCalculator
-  adpLow: number | null;
-  adpStdev: number | null;
-  adpSampleSize: number | null; // FFC times_drafted
-  adpTrendPct: number | null; // from ESPN week-over-week ADP change
   injuryStatus: string | null; // from ESPN, e.g. "QUESTIONABLE"
   auctionValue: number | null;
   percentOwned: number | null;
+  // ESPN's own aggregate ADP (ownership.averageDraftPosition) isn't labeled PPR or standard by
+  // ESPN and is identical regardless of requested scoring segment — kept as a neutral reference
+  // stat only, never blended into either format's `adp` above.
+  espnAdp: number | null;
+  adpTrendPct: number | null; // from ESPN week-over-week ADP change (also format-unspecified)
   matchedFromEspn: boolean;
-  matchedFromFfc: boolean;
+  ppr: RankingBundle;
+  standard: RankingBundle;
 }
 
 export interface PlayersFile {
