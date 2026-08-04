@@ -1,9 +1,10 @@
 "use client";
 
+import { Fragment } from "react";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { PlayerRow } from "./PlayerRow";
-import type { BoardRow, SortDir, SortKey } from "@/lib/derive";
+import { groupRowsByPosition, type BoardRow, type SortDir, type SortKey } from "@/lib/derive";
 import type { RankingFormat } from "@/lib/types";
 
 interface PlayerTableProps {
@@ -12,6 +13,7 @@ interface PlayerTableProps {
   sortKey: SortKey;
   sortDir: SortDir;
   format: RankingFormat;
+  groupByPosition?: boolean;
   onSortChange: (key: SortKey) => void;
   onReorder: (activeId: string, overId: string) => void;
   onDraftMe: (id: string) => void;
@@ -56,6 +58,7 @@ export function PlayerTable({
   sortKey,
   sortDir,
   format,
+  groupByPosition = false,
   onSortChange,
   onReorder,
   onDraftMe,
@@ -66,6 +69,8 @@ export function PlayerTable({
 }: PlayerTableProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const formatLabel = format === "ppr" ? "PPR" : "STD";
+  const groups = groupByPosition ? groupRowsByPosition(rows) : null;
+  const displayRows = groups ? groups.flatMap((g) => g.rows) : rows;
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -92,19 +97,39 @@ export function PlayerTable({
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-          {rows.map((row) => (
-            <PlayerRow
-              key={row.id}
-              row={row}
-              editMode={editMode}
-              onDraftMe={onDraftMe}
-              onDraftOther={onDraftOther}
-              onUndraft={onUndraft}
-              onToggleFavorite={onToggleFavorite}
-              onOpenDetail={onOpenDetail}
-            />
-          ))}
+        <SortableContext items={displayRows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+          {groups
+            ? groups.map((group) => (
+                <Fragment key={group.position}>
+                  <div className="border-b border-hairline bg-panel-raised px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+                    {group.position} · {group.rows.length}
+                  </div>
+                  {group.rows.map((row) => (
+                    <PlayerRow
+                      key={row.id}
+                      row={row}
+                      editMode={editMode}
+                      onDraftMe={onDraftMe}
+                      onDraftOther={onDraftOther}
+                      onUndraft={onUndraft}
+                      onToggleFavorite={onToggleFavorite}
+                      onOpenDetail={onOpenDetail}
+                    />
+                  ))}
+                </Fragment>
+              ))
+            : rows.map((row) => (
+                <PlayerRow
+                  key={row.id}
+                  row={row}
+                  editMode={editMode}
+                  onDraftMe={onDraftMe}
+                  onDraftOther={onDraftOther}
+                  onUndraft={onUndraft}
+                  onToggleFavorite={onToggleFavorite}
+                  onOpenDetail={onOpenDetail}
+                />
+              ))}
         </SortableContext>
       </DndContext>
 

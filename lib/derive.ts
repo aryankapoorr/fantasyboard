@@ -94,3 +94,24 @@ export function filterAndSortRows(
 
   return result;
 }
+
+// Fixed roster-review order: QB, RB, WR, TE, DST, K — matches standard fantasy draft-board convention.
+export const POSITION_GROUP_ORDER: Position[] = ["QB", "RB", "WR", "TE", "DST", "K"];
+
+export function countsByPosition(rows: BoardRow[]): Record<Position, number> {
+  const counts: Record<Position, number> = { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 };
+  for (const row of rows) counts[row.position]++;
+  return counts;
+}
+
+export interface PositionGroup {
+  position: Position;
+  rows: BoardRow[];
+}
+
+export function groupRowsByPosition(rows: BoardRow[]): PositionGroup[] {
+  return POSITION_GROUP_ORDER.map((position) => ({
+    position,
+    rows: rows.filter((r) => r.position === position),
+  })).filter((group) => group.rows.length > 0);
+}

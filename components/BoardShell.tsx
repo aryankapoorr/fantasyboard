@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { buildRows, filterAndSortRows, sortByAdpIds, type FilterState, type SortDir, type SortKey } from "@/lib/derive";
+import {
+  buildRows,
+  countsByPosition,
+  filterAndSortRows,
+  sortByAdpIds,
+  POSITION_GROUP_ORDER,
+  type FilterState,
+  type SortDir,
+  type SortKey,
+} from "@/lib/derive";
 import type { BoardState, DraftStatus, Player } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
 import { PlayerDetailModal } from "./PlayerDetailModal";
@@ -74,6 +83,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   }
 
   const draftedCount = Object.keys(board.draftPicks).length;
+  const positionCounts = filters.onlyMine ? countsByPosition(rows) : null;
 
   // A player can only be selected by clicking a currently-rendered row, and the modal's backdrop
   // blocks further table interaction while open, so both lookups are safe at render time.
@@ -92,11 +102,18 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onReset={() => actions.resetOrder(adpOrderedIds)}
       />
       <div
-        className={`flex items-center justify-between px-3 py-2 font-mono text-[11px] ${
+        className={`flex flex-col gap-1 px-3 py-2 font-mono text-[11px] sm:flex-row sm:items-center sm:justify-between ${
           filters.onlyMine ? "bg-accent/10 text-accent" : "text-ink-faint"
         }`}
       >
-        <span>{filters.onlyMine ? `Your team — ${rows.length} player${rows.length === 1 ? "" : "s"}` : `${rows.length} of ${players.length} players`}</span>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span>{filters.onlyMine ? `Your team — ${rows.length} player${rows.length === 1 ? "" : "s"}` : `${rows.length} of ${players.length} players`}</span>
+          {positionCounts && (
+            <span className="text-ink-faint">
+              {POSITION_GROUP_ORDER.map((pos) => `${pos} ${positionCounts[pos]}`).join(" · ")}
+            </span>
+          )}
+        </div>
         <span>{draftedCount} drafted</span>
       </div>
       <div className="px-3 pb-6">
@@ -106,6 +123,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           sortKey={sortKey}
           sortDir={sortDir}
           format={format}
+          groupByPosition={filters.onlyMine && !editMode}
           onSortChange={handleSortChange}
           onReorder={actions.reorderPlayer}
           onDraftMe={(id) => actions.setDraftStatus(id, "drafted_by_me")}
