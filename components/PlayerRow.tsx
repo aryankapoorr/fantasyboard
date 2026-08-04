@@ -44,6 +44,13 @@ function rankSourceLabel(row: BoardRow): string {
   return `${positionLabel} ·edit`;
 }
 
+function abbreviateName(row: BoardRow): string {
+  if (row.position === "DST") return row.name;
+  const parts = row.name.trim().split(" ");
+  if (parts.length < 2) return row.name;
+  return `${parts[0][0]}. ${parts.slice(1).join(" ")}`;
+}
+
 interface PlayerRowProps {
   row: BoardRow;
   editMode: boolean;
@@ -79,32 +86,39 @@ export function PlayerRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid grid-cols-[auto_2rem_1fr_1.5rem_3rem_auto_auto_auto] items-center gap-3 border-b border-hairline px-3 py-2.5 transition-colors sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] ${
-        isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
-      } ${isDrafted ? "opacity-40" : ""}`}
+      className={`group grid items-center gap-2 border-b border-hairline px-3 py-2.5 transition-colors sm:gap-3 sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] ${
+        editMode ? "grid-cols-[auto_1.75rem_1fr_1.5rem_2.75rem_auto_auto_auto]" : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto]"
+      } ${isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"} ${isDrafted ? "opacity-40" : ""}`}
     >
       <button
         {...attributes}
         {...listeners}
         aria-label={`Drag to reorder ${row.name}`}
         disabled={!editMode}
-        className={`flex h-6 w-6 items-center justify-center rounded text-ink-faint ${
-          editMode ? "cursor-grab touch-none hover:bg-panel-raised hover:text-ink-muted active:cursor-grabbing" : "invisible"
+        className={`h-6 w-6 items-center justify-center rounded text-ink-faint ${
+          editMode
+            ? "flex cursor-grab touch-none hover:bg-panel-raised hover:text-ink-muted active:cursor-grabbing"
+            : "hidden sm:flex sm:invisible"
         }`}
       >
         <GripVertical size={15} />
       </button>
 
-      <div className="text-right font-mono text-sm font-medium tabular-nums text-ink">{row.mineRank}</div>
+      <div
+        className={`text-right font-mono text-sm font-medium tabular-nums text-ink ${editMode ? "" : "hidden sm:block"}`}
+      >
+        {row.mineRank}
+      </div>
 
       <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
         <button type="button" onClick={() => onOpenDetail(row.id)} className="flex min-w-0 items-center gap-2 text-left">
           <PlayerAvatar player={row} size={30} />
           <div className="min-w-0">
             <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
-              {row.name}
+              <span className="sm:hidden">{abbreviateName(row)}</span>
+              <span className="hidden sm:inline">{row.name}</span>
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
               <PositionBadge position={row.position} />
               <span className="font-mono">{row.team}</span>
               {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
