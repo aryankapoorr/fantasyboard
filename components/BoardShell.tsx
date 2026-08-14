@@ -61,8 +61,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   function handleEditModeChange(next: boolean) {
     setEditMode(next);
     if (next) {
-      // Dragging reorders customOrder ("mine"); the visible row order must
-      // follow it, or drags appear to do nothing.
+      // The up/down arrows reorder customOrder ("mine"); the visible row order
+      // must follow it, or moves appear to do nothing.
       setSortKey("mine");
       setSortDir("asc");
     }

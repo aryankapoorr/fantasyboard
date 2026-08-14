@@ -71,6 +71,19 @@ export function PlayerTable({
   const formatLabel = format === "ppr" ? "PPR" : "STD";
   const groups = groupByPosition ? groupRowsByPosition(rows) : null;
   const displayRows = groups ? groups.flatMap((g) => g.rows) : rows;
+  const indexById = new Map(displayRows.map((r, i) => [r.id, i]));
+
+  function handleMoveUp(id: string) {
+    const index = indexById.get(id);
+    if (index === undefined || index === 0) return;
+    onReorder(id, displayRows[index - 1].id);
+  }
+
+  function handleMoveDown(id: string) {
+    const index = indexById.get(id);
+    if (index === undefined || index === displayRows.length - 1) return;
+    onReorder(id, displayRows[index + 1].id);
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -81,7 +94,13 @@ export function PlayerTable({
 
   return (
     <div className="overflow-hidden rounded-md border border-hairline">
-      <div className="hidden grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] items-start gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid">
+      <div
+        className={`hidden items-start gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid ${
+          editMode
+            ? "grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            : "grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+        }`}
+      >
         <div className="w-6" />
         <HeaderCell label="Rank" sortKey="mine" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-left font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
@@ -109,6 +128,10 @@ export function PlayerTable({
                       key={row.id}
                       row={row}
                       editMode={editMode}
+                      canMoveUp={(indexById.get(row.id) ?? 0) > 0}
+                      canMoveDown={(indexById.get(row.id) ?? 0) < displayRows.length - 1}
+                      onMoveUp={handleMoveUp}
+                      onMoveDown={handleMoveDown}
                       onDraftMe={onDraftMe}
                       onDraftOther={onDraftOther}
                       onUndraft={onUndraft}
@@ -123,6 +146,10 @@ export function PlayerTable({
                   key={row.id}
                   row={row}
                   editMode={editMode}
+                  canMoveUp={(indexById.get(row.id) ?? 0) > 0}
+                  canMoveDown={(indexById.get(row.id) ?? 0) < displayRows.length - 1}
+                  onMoveUp={handleMoveUp}
+                  onMoveDown={handleMoveDown}
                   onDraftMe={onDraftMe}
                   onDraftOther={onDraftOther}
                   onUndraft={onUndraft}

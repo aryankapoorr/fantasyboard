@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Star, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Star, Undo2 } from "lucide-react";
 import { InjuryBadge } from "./InjuryBadge";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { PositionBadge, positionEdgeColor } from "./PositionBadge";
@@ -54,6 +54,10 @@ function abbreviateName(row: BoardRow): string {
 interface PlayerRowProps {
   row: BoardRow;
   editMode: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
   onDraftMe: (id: string) => void;
   onDraftOther: (id: string) => void;
   onUndraft: (id: string) => void;
@@ -64,6 +68,10 @@ interface PlayerRowProps {
 export function PlayerRow({
   row,
   editMode,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
   onDraftMe,
   onDraftOther,
   onUndraft,
@@ -86,96 +94,148 @@ export function PlayerRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group grid items-center gap-2 border-b border-hairline px-3 py-2.5 transition-colors sm:gap-3 sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem] ${
-        editMode ? "grid-cols-[auto_1.75rem_1fr_1.5rem_2.75rem_auto_auto_auto]" : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto]"
-      } ${isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"} ${isDrafted ? "opacity-40" : ""}`}
+      {...(editMode ? attributes : {})}
+      {...(editMode ? listeners : {})}
+      aria-label={editMode ? `Drag to reorder ${row.name}` : undefined}
+      className={`border-b border-hairline transition-colors ${editMode ? "cursor-grab active:cursor-grabbing" : ""} ${
+        isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
+      } ${isDrafted ? "opacity-40" : ""}`}
     >
-      <button
-        {...attributes}
-        {...listeners}
-        aria-label={`Drag to reorder ${row.name}`}
-        disabled={!editMode}
-        className={`h-6 w-6 items-center justify-center rounded text-ink-faint ${
-          editMode
-            ? "flex cursor-grab touch-none hover:bg-panel-raised hover:text-ink-muted active:cursor-grabbing"
-            : "hidden sm:flex sm:invisible"
-        }`}
-      >
-        <GripVertical size={15} />
-      </button>
-
       <div
-        className={`text-right font-mono text-sm font-medium tabular-nums text-ink ${editMode ? "" : "hidden sm:block"}`}
-      >
-        {row.mineRank}
-      </div>
-
-      <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
-        <button type="button" onClick={() => onOpenDetail(row.id)} className="flex min-w-0 items-center gap-2 text-left">
-          <PlayerAvatar player={row} size={30} />
-          <div className="min-w-0">
-            <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
-              <span className="sm:hidden">{abbreviateName(row)}</span>
-              <span className="hidden sm:inline">{row.name}</span>
-            </div>
-            <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
-              <PositionBadge position={row.position} />
-              <span className="font-mono">{row.team}</span>
-              {row.byeWeek !== null && <span className="font-mono text-ink-faint">bye {row.byeWeek}</span>}
-              {row.injuryStatus && row.injuryStatus !== "ACTIVE" && <InjuryBadge status={row.injuryStatus} />}
-            </div>
-          </div>
-        </button>
-      </div>
-
-      <button
-        onClick={() => onToggleFavorite(row.id)}
-        aria-label={row.isFavorite ? `Unfavorite ${row.name}` : `Favorite ${row.name}`}
-        aria-pressed={row.isFavorite}
-        className={`flex h-6 w-6 items-center justify-center rounded hover:bg-panel-raised ${
-          row.isFavorite ? "text-accent" : "text-ink-faint hover:text-ink-muted"
+        className={`group grid items-center gap-2 px-3 py-2.5 sm:gap-3 ${
+          editMode
+            ? "grid-cols-[auto_1.75rem_1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
         }`}
       >
-        <Star size={15} fill={row.isFavorite ? "currentColor" : "none"} />
-      </button>
+        <div className={`items-center gap-1 ${editMode ? "flex h-6" : "hidden h-6 w-6 sm:flex sm:invisible"}`}>
+          <div aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center text-ink-faint">
+            <GripVertical size={15} />
+          </div>
+          {editMode && (
+            <div className="hidden items-center gap-1 sm:flex">
+              <button
+                onClick={() => onMoveUp(row.id)}
+                disabled={!canMoveUp}
+                aria-label={`Move ${row.name} up`}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint hover:bg-panel-raised hover:text-ink-muted disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronUp size={15} />
+              </button>
+              <button
+                onClick={() => onMoveDown(row.id)}
+                disabled={!canMoveDown}
+                aria-label={`Move ${row.name} down`}
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-ink-faint hover:bg-panel-raised hover:text-ink-muted disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                <ChevronDown size={15} />
+              </button>
+            </div>
+          )}
+        </div>
 
-      <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
-        {row.adp !== null ? row.adp.toFixed(1) : "—"}
-      </div>
+        <div
+          className={`text-right font-mono text-sm font-medium tabular-nums text-ink ${editMode ? "" : "hidden sm:block"}`}
+        >
+          {row.mineRank}
+        </div>
 
-      <div className="hidden text-right sm:block" title={rankTooltip(row)}>
-        <div className="font-mono text-sm tabular-nums text-ink-muted">#{row.consensusRank}</div>
-        <div className="font-mono text-[10px] tabular-nums text-ink-faint">{rankSourceLabel(row)}</div>
-      </div>
-      <div className="hidden justify-self-end sm:block">
-        <StatDelta delta={row.adpWeeklyDelta} />
-      </div>
-
-      <div className="col-span-3 flex items-center justify-end gap-1.5 sm:col-span-1">
-        {isDrafted ? (
-          <button
-            onClick={() => onUndraft(row.id)}
-            className="flex items-center gap-1 rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
-          >
-            <Undo2 size={12} /> undo
+        <div className="flex min-w-0 items-center gap-2.5 border-l-2 pl-2.5" style={{ borderColor: positionEdgeColor(row.position) }}>
+          <button type="button" onClick={() => onOpenDetail(row.id)} className="flex min-w-0 items-center gap-2 text-left">
+            <PlayerAvatar player={row} size={30} />
+            <div className="min-w-0">
+              <div className="truncate font-display text-[15px] font-medium leading-tight tracking-wide text-ink hover:text-accent">
+                <span className="sm:hidden">{abbreviateName(row)}</span>
+                <span className="hidden sm:inline">{row.name}</span>
+              </div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                <PositionBadge position={row.position} />
+                <span className="font-mono">{row.team}</span>
+                {row.byeWeek !== null && (
+                  <span className={`font-mono text-ink-faint ${editMode ? "hidden sm:inline" : ""}`}>
+                    bye {row.byeWeek}
+                  </span>
+                )}
+                {row.injuryStatus && row.injuryStatus !== "ACTIVE" && (
+                  <span className={editMode ? "hidden sm:inline" : ""}>
+                    <InjuryBadge status={row.injuryStatus} />
+                  </span>
+                )}
+              </div>
+            </div>
           </button>
-        ) : (
-          <>
+        </div>
+
+        <button
+          onClick={() => onToggleFavorite(row.id)}
+          aria-label={row.isFavorite ? `Unfavorite ${row.name}` : `Favorite ${row.name}`}
+          aria-pressed={row.isFavorite}
+          className={`flex h-6 w-6 items-center justify-center rounded hover:bg-panel-raised ${
+            row.isFavorite ? "text-accent" : "text-ink-faint hover:text-ink-muted"
+          }`}
+        >
+          <Star size={15} fill={row.isFavorite ? "currentColor" : "none"} />
+        </button>
+
+        <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
+          {row.adp !== null ? row.adp.toFixed(1) : "—"}
+        </div>
+
+        <div className="hidden text-right sm:block" title={rankTooltip(row)}>
+          <div className="font-mono text-sm tabular-nums text-ink-muted">#{row.consensusRank}</div>
+          <div className="font-mono text-[10px] tabular-nums text-ink-faint">{rankSourceLabel(row)}</div>
+        </div>
+        <div className="hidden justify-self-end sm:block">
+          <StatDelta delta={row.adpWeeklyDelta} />
+        </div>
+
+        <div className="col-span-3 flex items-center justify-end gap-1.5 sm:col-span-1">
+          {isDrafted ? (
             <button
-              onClick={() => onDraftMe(row.id)}
-              className="rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
+              onClick={() => onUndraft(row.id)}
+              className="flex items-center gap-1 rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
             >
-              me
+              <Undo2 size={12} /> undo
             </button>
-            <button
-              onClick={() => onDraftOther(row.id)}
-              className="rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
-            >
-              opp
-            </button>
-          </>
-        )}
+          ) : (
+            <>
+              <button
+                onClick={() => onDraftMe(row.id)}
+                className="rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
+              >
+                me
+              </button>
+              <button
+                onClick={() => onDraftOther(row.id)}
+                className="rounded border border-hairline px-2 py-1 font-mono text-[11px] text-ink-muted hover:border-ink-faint hover:text-ink"
+              >
+                opp
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {editMode && (
+        <div className="flex items-center gap-1.5 border-t border-hairline/60 px-3 py-1.5 sm:hidden">
+          <button
+            onClick={() => onMoveUp(row.id)}
+            disabled={!canMoveUp}
+            aria-label={`Move ${row.name} up`}
+            className="flex h-8 flex-1 items-center justify-center rounded text-ink-faint hover:bg-panel-raised hover:text-ink-muted disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronUp size={15} />
+          </button>
+          <button
+            onClick={() => onMoveDown(row.id)}
+            disabled={!canMoveDown}
+            aria-label={`Move ${row.name} down`}
+            className="flex h-8 flex-1 items-center justify-center rounded text-ink-faint hover:bg-panel-raised hover:text-ink-muted disabled:opacity-30 disabled:hover:bg-transparent"
+          >
+            <ChevronDown size={15} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
