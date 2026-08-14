@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -15,3 +15,9 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Firebase defaults to indexedDBLocalPersistence, which races with signInWithPopup:
+// the popup stealing focus fires a visibilitychange->hidden on the main tab, closing
+// the IndexedDB connection mid-write and throwing "Database is closing/hidden". Forcing
+// localStorage-based persistence avoids that IndexedDB open/close cycle entirely.
+setPersistence(auth, browserLocalPersistence).catch(() => {});
