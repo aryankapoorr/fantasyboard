@@ -57,7 +57,9 @@ async function main() {
   const seed: SeedPlayer[] = parsed.data;
 
   console.log(`Fetching ESPN player pool for season ${season}...`);
-  const espnPlayers = await fetchPlayerPool(season, 1000);
+  // 2000 comfortably exceeds ESPN's actual pool size (~1026 fantasy-rosterable players observed
+  // live) — this defines the board's entire player universe now, so it must not truncate it.
+  const espnPlayers = await fetchPlayerPool(season, 2000);
   console.log(`Fetched ${espnPlayers.length} ESPN players (carries both PPR and STANDARD ranks).`);
 
   console.log(`Fetching FantasyFootballCalculator ADP (PPR and standard) for season ${season}...`);
@@ -72,7 +74,7 @@ async function main() {
       `${sleeperData.lastSeason.byNameAndPosition.size + sleeperData.lastSeason.dstByTeam.size} Sleeper last-season stat lines.`
   );
 
-  const { players, matchedFromEspnCount, topTierCount, unmatchedNames, coverage, sleeperMatchedCount } = mergePlayers(
+  const { players, matchedToSeedCount, topTierCount, unmatchedSeedNames, coverage, sleeperMatchedCount } = mergePlayers(
     seed,
     espnPlayers,
     { ppr: ffcPpr, standard: ffcStandard },
@@ -80,26 +82,29 @@ async function main() {
     aliases
   );
 
-  const espnPct = ((matchedFromEspnCount / seed.length) * 100).toFixed(1);
-  console.log(`Matched ${matchedFromEspnCount}/${seed.length} (${espnPct}%) seed players to ESPN data.`);
-
-  const sleeperPct = ((sleeperMatchedCount / seed.length) * 100).toFixed(1);
+  const seedPct = ((matchedToSeedCount / seed.length) * 100).toFixed(1);
   console.log(
-    `Matched ${sleeperMatchedCount}/${seed.length} (${sleeperPct}%) seed players to Sleeper projections/stats ` +
+    `${matchedToSeedCount}/${seed.length} (${seedPct}%) editorial seed entries matched a live ESPN player ` +
+      `(informational — the seed list is a rank fallback now, not the player universe).`
+  );
+
+  const sleeperPct = ((sleeperMatchedCount / players.length) * 100).toFixed(1);
+  console.log(
+    `Matched ${sleeperMatchedCount}/${players.length} (${sleeperPct}%) players to Sleeper projections/stats ` +
       `(supplementary enrichment — not a build-blocking threshold).`
   );
 
   for (const format of FORMATS) {
     const c = coverage[format];
-    const consensusPct = ((c.consensusEspnCount / seed.length) * 100).toFixed(1);
+    const consensusPct = ((c.consensusEspnCount / players.length) * 100).toFixed(1);
     const topTierConsensusRate = topTierCount > 0 ? c.topTierConsensusEspnCount / topTierCount : 1;
-    const positionRankPct = ((c.positionRankEspnCount / seed.length) * 100).toFixed(1);
+    const positionRankPct = ((c.positionRankEspnCount / players.length) * 100).toFixed(1);
     const topTierPositionRankRate = topTierCount > 0 ? c.topTierPositionRankEspnCount / topTierCount : 1;
-    const ffcPct = ((c.ffcMatchedCount / seed.length) * 100).toFixed(1);
+    const ffcPct = ((c.ffcMatchedCount / players.length) * 100).toFixed(1);
     console.log(
-      `[${format}] consensus from ESPN: ${c.consensusEspnCount}/${seed.length} (${consensusPct}%), ${(topTierConsensusRate * 100).toFixed(1)}% within top tier. ` +
-        `positionRank from ESPN: ${c.positionRankEspnCount}/${seed.length} (${positionRankPct}%), ${(topTierPositionRankRate * 100).toFixed(1)}% within top tier. ` +
-        `FFC ADP matched: ${c.ffcMatchedCount}/${seed.length} (${ffcPct}%).`
+      `[${format}] consensus from ESPN: ${c.consensusEspnCount}/${players.length} (${consensusPct}%), ${(topTierConsensusRate * 100).toFixed(1)}% within top tier. ` +
+        `positionRank from ESPN: ${c.positionRankEspnCount}/${players.length} (${positionRankPct}%), ${(topTierPositionRankRate * 100).toFixed(1)}% within top tier. ` +
+        `FFC ADP matched: ${c.ffcMatchedCount}/${players.length} (${ffcPct}%).`
     );
 
     if (format === "ppr" && topTierPositionRankRate < MIN_TOP_TIER_PPR_POSITION_RANK_ESPN_RATE) {
@@ -116,9 +121,9 @@ async function main() {
     }
   }
 
-  if (unmatchedNames.length > 0) {
-    console.log("Unmatched ESPN names (add to data/seed/name-aliases.json if needed):");
-    for (const name of unmatchedNames) console.log(`  - ${name}`);
+  if (unmatchedSeedNames.length > 0) {
+    console.log("Editorial seed entries with no matching live ESPN player (their rank fallback goes unused; safe to clean up or add to data/seed/name-aliases.json):");
+    for (const name of unmatchedSeedNames) console.log(`  - ${name}`);
   }
 
   // Roll the weekly anchor forward: keep comparing against the same snapshot until it's at

@@ -49,8 +49,10 @@ export interface StatLine {
 }
 
 export interface Player {
-  id: string; // espn id if matched, else `slug:<name>-<team>`
-  espnId: number | null;
+  // The player universe is ESPN's own live pool (see scripts/lib/merge.ts), so this is always
+  // ESPN's player id — every Player has one, never a synthetic fallback.
+  id: string;
+  espnId: number;
   name: string;
   position: Position;
   team: string; // uppercase abbrev, "FA" if unrostered
@@ -64,7 +66,6 @@ export interface Player {
   // format-agnostic reference/tooltip stat.
   espnAdp: number | null;
   adpTrendPct: number | null; // from ESPN week-over-week ADP change (also format-unspecified)
-  matchedFromEspn: boolean;
   ppr: RankingBundle;
   standard: RankingBundle;
   // Format-agnostic category stats — same underlying game-log numbers regardless of scoring format.
