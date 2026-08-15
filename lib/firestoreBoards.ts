@@ -18,7 +18,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeDraftPickUpdate, spliceReorder } from "./boardOps";
+import { computeDraftPickUpdate, mergeMissingByAdpOrder, spliceReorder } from "./boardOps";
 import type { BoardState, DraftStatus, FirestoreBoardDoc, RankingFormat } from "./types";
 
 export interface BoardSummary {
@@ -68,6 +68,7 @@ export function useUserBoards(uid: string | null): { boards: BoardSummary[]; loa
 }
 
 interface FirestoreBoardActions {
+  initOrder: (playerIds: string[]) => void;
   reorderPlayer: (activeId: string, overId: string) => void;
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
@@ -116,6 +117,15 @@ export function useFirestoreBoard(
   }, [uid, boardId]);
 
   const actions: FirestoreBoardActions = {
+    initOrder: (playerIds) => {
+      if (!uid || !boardId || !doc_) return;
+      const next = mergeMissingByAdpOrder(doc_.customOrder, playerIds);
+      if (next === doc_.customOrder) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        customOrder: next,
+        updatedAt: serverTimestamp(),
+      });
+    },
     reorderPlayer: (activeId, overId) => {
       if (!uid || !boardId || !doc_) return;
       const next = spliceReorder(doc_.customOrder, activeId, overId);

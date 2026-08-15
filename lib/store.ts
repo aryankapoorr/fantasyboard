@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { safeLocalStorage } from "./storage";
-import { applyNote, computeDraftPickUpdate, spliceReorder, toggleFavorite as toggleFavoriteId } from "./boardOps";
+import {
+  applyNote,
+  computeDraftPickUpdate,
+  mergeMissingByAdpOrder,
+  spliceReorder,
+  toggleFavorite as toggleFavoriteId,
+} from "./boardOps";
 import type { BoardState, DraftStatus, RankingFormat } from "./types";
 
 interface BoardActions {
@@ -37,11 +43,8 @@ export const useBoardStore = create<BoardStore>()(
       initOrder: (playerIds) => {
         const { customOrder } = get();
         if (customOrder.length > 0) {
-          const known = new Set(customOrder);
-          const missing = playerIds.filter((id) => !known.has(id));
-          if (missing.length > 0) {
-            set({ customOrder: [...customOrder, ...missing] });
-          }
+          const next = mergeMissingByAdpOrder(customOrder, playerIds);
+          if (next !== customOrder) set({ customOrder: next });
           return;
         }
         set({ customOrder: playerIds });
