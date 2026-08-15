@@ -34,9 +34,10 @@ export function FilterBar({
             type="text"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            placeholder="Search player…"
+            disabled={editMode}
+            placeholder={editMode ? "Unavailable in edit mode" : "Search player…"}
             aria-label="Search players"
-            className="w-40 rounded border border-hairline bg-board py-1.5 pl-8 pr-2.5 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent sm:w-52"
+            className="w-40 rounded border border-hairline bg-board py-1.5 pl-8 pr-2.5 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-52"
           />
         </div>
 
@@ -45,8 +46,9 @@ export function FilterBar({
             <button
               key={pos}
               onClick={() => onFiltersChange({ ...filters, position: pos })}
+              disabled={editMode}
               aria-pressed={filters.position === pos}
-              className={`rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+              className={`rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                 filters.position === pos
                   ? "border-accent bg-accent/15 text-accent"
                   : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
@@ -60,8 +62,9 @@ export function FilterBar({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })}
+            disabled={editMode}
             aria-pressed={filters.onlyMine}
-            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               filters.onlyMine
                 ? "border-accent bg-accent/15 text-accent"
                 : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
@@ -72,8 +75,9 @@ export function FilterBar({
 
           <button
             onClick={() => onFiltersChange({ ...filters, onlyFavorites: !filters.onlyFavorites })}
+            disabled={editMode}
             aria-pressed={filters.onlyFavorites}
-            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors ${
+            className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               filters.onlyFavorites
                 ? "border-accent bg-accent/15 text-accent"
                 : "border-hairline text-ink-muted hover:border-ink-faint hover:text-ink"
@@ -85,12 +89,15 @@ export function FilterBar({
       </div>
 
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted">
+        <label
+          className={`flex items-center gap-1.5 font-mono text-[11px] text-ink-muted ${editMode ? "cursor-not-allowed opacity-40" : ""}`}
+        >
           <input
             type="checkbox"
             checked={filters.hideDrafted}
             onChange={(e) => onFiltersChange({ ...filters, hideDrafted: e.target.checked })}
-            className="h-3.5 w-3.5 accent-[var(--accent)]"
+            disabled={editMode}
+            className="h-3.5 w-3.5 accent-[var(--accent)] disabled:cursor-not-allowed"
           />
           hide drafted
         </label>

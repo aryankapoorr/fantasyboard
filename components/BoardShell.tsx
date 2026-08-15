@@ -35,7 +35,9 @@ interface BoardShellProps {
 
 export function BoardShell({ players, board, hydrated, actions }: BoardShellProps) {
   const [editMode, setEditMode] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("adp");
+  // Defaults to the board's own saved order, not ADP — otherwise a freshly loaded page shows
+  // ADP order on top of the (correctly persisted) custom order, which reads as "my reorder didn't save."
+  const [sortKey, setSortKey] = useState<SortKey>("mine");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   // Fixed at board creation — boards written before this field existed fall back to PPR.
@@ -66,6 +68,11 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
       // must follow it, or moves appear to do nothing.
       setSortKey("mine");
       setSortDir("asc");
+      // Reordering moves a player to sit beside whatever's currently adjacent in customOrder —
+      // if any filter is hiding players, "adjacent" in the visible list isn't adjacent in the
+      // real order, and the move silently reshuffles hidden players too. Clear filters so edit
+      // mode always operates on the full, unfiltered board.
+      setFilters({ search: "", position: "ALL", hideDrafted: false, onlyMine: false, onlyFavorites: false });
     }
   }
 
