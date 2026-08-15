@@ -87,6 +87,19 @@ export interface DraftPickState {
   draftedAt?: string;
 }
 
+// A tier is a visual divider ("Tier N") that groups players within one scope — either the whole
+// board ("ALL") or a single real position. It's independent of `customOrder`: `beforePlayerId`
+// anchors it to whichever player currently renders right below it in that scope, so it travels
+// naturally as players are reordered rather than pinning to a fixed index.
+export type TierScope = "ALL" | Position;
+
+export interface Tier {
+  id: string; // `tier:${uuid}` — prefixed so it's cheaply distinguishable from a (bare numeric) player id
+  scope: TierScope;
+  beforePlayerId: string | null; // null = renders after the last player in this scope
+  customLabel: string | null; // null = auto-numbered "Tier N"; non-null = sticky custom text
+}
+
 export interface BoardState {
   customOrder: string[];
   draftPicks: Record<string, DraftPickState>;
@@ -95,6 +108,7 @@ export interface BoardState {
   format: RankingFormat;
   favorites: string[];
   notes: Record<string, string>;
+  tiers: Tier[];
 }
 
 export interface SeedPlayer {

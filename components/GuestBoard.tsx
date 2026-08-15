@@ -64,6 +64,10 @@ export function GuestBoard({ players }: { players: Player[] }) {
         resetDraft: store.resetDraft,
         toggleFavorite: store.toggleFavorite,
         setNote: store.setNote,
+        addTier: store.addTier,
+        removeTier: store.removeTier,
+        renameTier: store.renameTier,
+        reorderTiers: store.reorderTiers,
       }}
     />
   );

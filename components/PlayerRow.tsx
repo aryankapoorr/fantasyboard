@@ -55,6 +55,7 @@ function abbreviateName(row: BoardRow): string {
 interface PlayerRowProps {
   row: BoardRow;
   editMode: boolean;
+  canDrag: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onMoveUp: (id: string) => void;
@@ -69,6 +70,7 @@ interface PlayerRowProps {
 export function PlayerRow({
   row,
   editMode,
+  canDrag,
   canMoveUp,
   canMoveDown,
   onMoveUp,
@@ -81,7 +83,7 @@ export function PlayerRow({
 }: PlayerRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
-    disabled: !editMode,
+    disabled: !canDrag,
   });
 
   const style = {
@@ -95,10 +97,10 @@ export function PlayerRow({
     <div
       ref={setNodeRef}
       style={style}
-      {...(editMode ? attributes : {})}
-      {...(editMode ? listeners : {})}
-      aria-label={editMode ? `Drag to reorder ${row.name}` : undefined}
-      className={`border-b border-hairline transition-colors ${editMode ? "cursor-grab active:cursor-grabbing" : ""} ${
+      {...(canDrag ? attributes : {})}
+      {...(canDrag ? listeners : {})}
+      aria-label={canDrag ? `Drag to reorder ${row.name}` : undefined}
+      className={`border-b border-hairline transition-colors ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
@@ -110,7 +112,10 @@ export function PlayerRow({
         }`}
       >
         <div className={`items-center gap-1 ${editMode ? "flex h-6" : "hidden h-6 w-6 sm:flex sm:invisible"}`}>
-          <div aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center text-ink-faint">
+          <div
+            aria-hidden="true"
+            className={`flex h-6 w-6 shrink-0 items-center justify-center text-ink-faint ${canDrag ? "" : "opacity-30"}`}
+          >
             <GripVertical size={15} />
           </div>
           {editMode && (

@@ -1,4 +1,4 @@
-import type { DraftPickState, DraftStatus } from "./types";
+import type { DraftPickState, DraftStatus, Tier, TierScope } from "./types";
 
 export function toggleFavorite(favorites: string[], playerId: string): string[] {
   return favorites.includes(playerId) ? favorites.filter((id) => id !== playerId) : [...favorites, playerId];
@@ -52,6 +52,35 @@ export function mergeMissingByAdpOrder(order: string[], adpOrderedIds: string[])
     next.splice(insertAt, 0, id);
   }
   return next;
+}
+
+export function addTier(tiers: Tier[], scope: TierScope, beforePlayerId: string | null): Tier[] {
+  return [...tiers, { id: `tier:${crypto.randomUUID()}`, scope, beforePlayerId, customLabel: null }];
+}
+
+export function removeTier(tiers: Tier[], tierId: string): Tier[] {
+  return tiers.filter((t) => t.id !== tierId);
+}
+
+export function renameTier(tiers: Tier[], tierId: string, label: string): Tier[] {
+  const trimmed = label.trim();
+  return tiers.map((t) => (t.id === tierId ? { ...t, customLabel: trimmed || null } : t));
+}
+
+// Replaces the whole same-scope slice of `tiers` with `ordered` (ids + recomputed anchors, as
+// produced by resolveInterleavedDragEnd). A single-field patch on just the dragged tier isn't
+// enough: multiple tiers can share one anchor, and their relative order (the tiebreak used by
+// interleaveTiers) only lives in this array's element order, so every same-scope tier's position
+// must be rewritten atomically for a drag to reliably take effect.
+export function applyTierOrder(
+  tiers: Tier[],
+  scope: TierScope,
+  ordered: { id: string; beforePlayerId: string | null }[]
+): Tier[] {
+  const others = tiers.filter((t) => t.scope !== scope);
+  const byId = new Map(tiers.map((t) => [t.id, t]));
+  const rebuilt = ordered.map((u) => ({ ...byId.get(u.id)!, beforePlayerId: u.beforePlayerId }));
+  return [...others, ...rebuilt];
 }
 
 export function computeDraftPickUpdate(

@@ -41,12 +41,14 @@ export function FilterBar({
           />
         </div>
 
+        {/* Position pills stay usable in edit mode (unlike every other filter below) — they pick
+            which scope's tiers you're editing. Only FLEX is blocked, since there's no flex tier. */}
         <div className="flex items-center gap-1" role="group" aria-label="Filter by position">
           {POSITIONS.map((pos) => (
             <button
               key={pos}
               onClick={() => onFiltersChange({ ...filters, position: pos })}
-              disabled={editMode}
+              disabled={pos === "FLEX" && editMode}
               aria-pressed={filters.position === pos}
               className={`rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                 filters.position === pos

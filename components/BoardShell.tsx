@@ -11,7 +11,7 @@ import {
   type SortDir,
   type SortKey,
 } from "@/lib/derive";
-import type { BoardState, DraftStatus, Player } from "@/lib/types";
+import type { BoardState, DraftStatus, Player, TierScope } from "@/lib/types";
 import { FilterBar } from "./FilterBar";
 import { PlayerDetailModal } from "./PlayerDetailModal";
 import { PlayerTable } from "./PlayerTable";
@@ -24,6 +24,10 @@ export interface BoardActions {
   resetDraft: () => void;
   toggleFavorite: (playerId: string) => void;
   setNote: (playerId: string, text: string) => void;
+  addTier: (scope: TierScope, beforePlayerId: string | null) => void;
+  removeTier: (tierId: string) => void;
+  renameTier: (tierId: string, label: string) => void;
+  reorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 interface BoardShellProps {
@@ -82,6 +86,19 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     return filterAndSortRows(built, filters, sortKey, sortDir);
   }, [hydrated, players, board, filters, sortKey, sortDir, format]);
 
+  // Tiers exist for the whole board and for each real position, but not for the FLEX pseudo-
+  // filter (RB/WR/TE mixed — there's no single position's tier list that applies). Player drag
+  // reordering only ever runs at the unfiltered ALL scope: reordering within a filtered subset
+  // would splice against filtered-list adjacency and corrupt the real customOrder for hidden
+  // players (the bug the position-filter-reset above already guards against).
+  const tierScope: TierScope | null =
+    filters.position === "FLEX" ? null : filters.position === "ALL" ? "ALL" : filters.position;
+  const canDragPlayers = editMode && filters.position === "ALL";
+  const scopeTiers = useMemo(
+    () => (tierScope === null ? [] : (board.tiers ?? []).filter((t) => t.scope === tierScope)),
+    [board.tiers, tierScope]
+  );
+
   if (!hydrated) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -139,10 +156,13 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         <PlayerTable
           rows={rows}
           editMode={editMode}
+          canDragPlayers={canDragPlayers}
           sortKey={sortKey}
           sortDir={sortDir}
           format={format}
           groupByPosition={filters.onlyMine && !editMode}
+          tierScope={tierScope}
+          scopeTiers={scopeTiers}
           onSortChange={handleSortChange}
           onReorder={actions.reorderPlayer}
           onDraftMe={(id) => actions.setDraftStatus(id, "drafted_by_me")}
@@ -150,6 +170,10 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           onUndraft={actions.undraft}
           onToggleFavorite={actions.toggleFavorite}
           onOpenDetail={setSelectedPlayerId}
+          onAddTier={actions.addTier}
+          onRemoveTier={actions.removeTier}
+          onRenameTier={actions.renameTier}
+          onReorderTiers={actions.reorderTiers}
         />
       </div>
 

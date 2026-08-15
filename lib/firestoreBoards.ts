@@ -18,8 +18,16 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeDraftPickUpdate, mergeMissingByAdpOrder, spliceReorder } from "./boardOps";
-import type { BoardState, DraftStatus, FirestoreBoardDoc, RankingFormat } from "./types";
+import {
+  addTier as addTierOp,
+  applyTierOrder,
+  computeDraftPickUpdate,
+  mergeMissingByAdpOrder,
+  removeTier as removeTierOp,
+  renameTier as renameTierOp,
+  spliceReorder,
+} from "./boardOps";
+import type { BoardState, DraftStatus, FirestoreBoardDoc, RankingFormat, TierScope } from "./types";
 
 export interface BoardSummary {
   id: string;
@@ -77,6 +85,10 @@ interface FirestoreBoardActions {
   toggleFavorite: (playerId: string) => void;
   setNote: (playerId: string, text: string) => void;
   rename: (name: string) => void;
+  addTier: (scope: TierScope, beforePlayerId: string | null) => void;
+  removeTier: (tierId: string) => void;
+  renameTier: (tierId: string, label: string) => void;
+  reorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 export function useFirestoreBoard(
@@ -189,6 +201,34 @@ export function useFirestoreBoard(
         updatedAt: serverTimestamp(),
       });
     },
+    addTier: (scope, beforePlayerId) => {
+      if (!uid || !boardId || !doc_) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        tiers: addTierOp(doc_.tiers ?? [], scope, beforePlayerId),
+        updatedAt: serverTimestamp(),
+      });
+    },
+    removeTier: (tierId) => {
+      if (!uid || !boardId || !doc_) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        tiers: removeTierOp(doc_.tiers ?? [], tierId),
+        updatedAt: serverTimestamp(),
+      });
+    },
+    renameTier: (tierId, label) => {
+      if (!uid || !boardId || !doc_) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        tiers: renameTierOp(doc_.tiers ?? [], tierId, label),
+        updatedAt: serverTimestamp(),
+      });
+    },
+    reorderTiers: (scope, ordered) => {
+      if (!uid || !boardId || !doc_) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        tiers: applyTierOrder(doc_.tiers ?? [], scope, ordered),
+        updatedAt: serverTimestamp(),
+      });
+    },
   };
 
   if (!uid || !boardId) return { board: null, name: null, loading: false, notFound: false, actions };
@@ -211,6 +251,7 @@ export async function createBoard(
     format,
     favorites: [],
     notes: {},
+    tiers: [],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
