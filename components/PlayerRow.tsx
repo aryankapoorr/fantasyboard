@@ -11,11 +11,12 @@ import type { BoardRow } from "@/lib/derive";
 
 export function adpTooltip(row: BoardRow): string | undefined {
   const formatLabel = row.format === "ppr" ? "PPR" : "standard";
-  const parts: string[] = [`FantasyFootballCalculator ${formatLabel} ADP`];
-  if (row.adpStdev !== null && row.adpSampleSize !== null) {
-    parts.push(`σ${row.adpStdev.toFixed(1)} (n=${row.adpSampleSize})`);
+  const parts: string[] = ["ESPN aggregate ADP (format unspecified)"];
+  if (row.ffcAdp !== null) {
+    const stdevPart =
+      row.adpStdev !== null && row.adpSampleSize !== null ? ` (σ${row.adpStdev.toFixed(1)}, n=${row.adpSampleSize})` : "";
+    parts.push(`FantasyFootballCalculator ${formatLabel} ADP: ${row.ffcAdp.toFixed(1)}${stdevPart}`);
   }
-  if (row.espnAdp !== null) parts.push(`ESPN aggregate ADP (format unspecified): ${row.espnAdp.toFixed(1)}`);
   return parts.join(" · ");
 }
 

@@ -12,8 +12,9 @@ export interface RankingBundle {
   positionRankAnalystCount: number | null; // distinct outside analysts who submitted a rank in THIS format
   positionRankLow: number | null; // lowest (best) individual analyst rank, this format only
   positionRankHigh: number | null; // highest (worst) individual analyst rank, this format only
-  adp: number | null; // FantasyFootballCalculator ADP for this format only
+  adp: number | null; // ESPN aggregate ADP (format-unspecified, same value in both bundles); falls back to FFC's per-format ADP only if ESPN has no value for this player
   adpWeeklyDelta: number | null; // (adp ~7 days ago) - (adp now); positive = rising (ADP dropped)
+  ffcAdp: number | null; // FantasyFootballCalculator ADP for this format only — kept as a secondary reference now that `adp` above is ESPN-primary
   adpHigh: number | null;
   adpLow: number | null;
   adpStdev: number | null;
@@ -58,8 +59,9 @@ export interface Player {
   auctionValue: number | null;
   percentOwned: number | null;
   // ESPN's own aggregate ADP (ownership.averageDraftPosition) isn't labeled PPR or standard by
-  // ESPN and is identical regardless of requested scoring segment — kept as a neutral reference
-  // stat only, never blended into either format's `adp` above.
+  // ESPN and is identical regardless of requested scoring segment. It's the primary source for
+  // both formats' `adp` above (full coverage, vs. FFC's ~65-70%) — kept here too as a
+  // format-agnostic reference/tooltip stat.
   espnAdp: number | null;
   adpTrendPct: number | null; // from ESPN week-over-week ADP change (also format-unspecified)
   matchedFromEspn: boolean;

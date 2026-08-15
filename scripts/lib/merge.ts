@@ -201,8 +201,11 @@ export function mergePlayers(
         positionRankAnalystCount: e.espn ? e.espn[format].positionRankAnalystCount : null,
         positionRankLow: e.espn?.[format].positionRankLow ?? null,
         positionRankHigh: e.espn?.[format].positionRankHigh ?? null,
-        adp: ffcPlayer?.adp ?? null,
+        // ESPN's ADP has full coverage and is the primary source; FFC only fills in the rare
+        // case ESPN has no value (e.g. a player unmatched from ESPN entirely).
+        adp: e.espn?.adp ?? ffcPlayer?.adp ?? null,
         adpWeeklyDelta: null, // filled in by fetch-rankings.ts against the rolling weekly anchor
+        ffcAdp: ffcPlayer?.adp ?? null,
         adpHigh: ffcPlayer?.high ?? null,
         adpLow: ffcPlayer?.low ?? null,
         adpStdev: ffcPlayer?.stdev ?? null,

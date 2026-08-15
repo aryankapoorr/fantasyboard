@@ -35,7 +35,8 @@ export interface EspnPlayer {
   team: string;
   byeWeek: number | null;
   // ESPN's own ADP isn't labeled PPR/standard and is identical regardless of requested scoring
-  // segment (verified live across leaguedefaults/1,3,5,6,7,8) — kept as a neutral reference only.
+  // segment (verified live across leaguedefaults/1,3,5,6,7,8). This is the primary ADP source
+  // for both formats in scripts/lib/merge.ts (full coverage, unlike FFC's per-format data).
   adp: number | null;
   adpTrendPct: number | null;
   percentOwned: number | null;
