@@ -11,6 +11,8 @@ interface FilterBarProps {
   onFiltersChange: (next: FilterState) => void;
   editMode: boolean;
   onEditModeChange: (next: boolean) => void;
+  tierEditMode: boolean;
+  onTierEditModeChange: (next: boolean) => void;
   tierScope: TierScope;
   onReset: () => void;
   onResetDraft: () => void;
@@ -22,15 +24,18 @@ export function FilterBar({
   onFiltersChange,
   editMode,
   onEditModeChange,
+  tierEditMode,
+  onTierEditModeChange,
   tierScope,
   onReset,
   onResetDraft,
   draftedCount,
 }: FilterBarProps) {
-  // Off the ALL page (a real position, or FLEX), editing means "edit that scope's tiers" —
-  // players there are never draggable (see BoardShell's canDragPlayers), so calling it
-  // "edit mode" would overpromise.
-  const editLabel = tierScope !== "ALL" ? "edit tiers" : "edit mode";
+  // Player dragging only ever works at the unfiltered ALL scope (see BoardShell's
+  // canDragPlayers), so the "edit mode" toggle itself is only shown there — off ALL, "edit
+  // tiers" is the only editing affordance that does anything.
+  const showEditModeToggle = tierScope === "ALL";
+  const anyEditing = editMode || tierEditMode;
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-hairline bg-panel/95 px-3 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -40,15 +45,15 @@ export function FilterBar({
             type="text"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            disabled={editMode}
-            placeholder={editMode ? "Unavailable in edit mode" : "Search player…"}
+            disabled={anyEditing}
+            placeholder={anyEditing ? "Unavailable while editing" : "Search player…"}
             aria-label="Search players"
             className="w-40 rounded border border-hairline bg-board py-1.5 pl-8 pr-2.5 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-52"
           />
         </div>
 
-        {/* Position pills stay usable in edit mode (unlike every other filter below) — they pick
-            which scope's tiers you're editing. */}
+        {/* Position pills stay usable while editing (unlike every other filter below) — they pick
+            which position's players you're reordering, or which scope's tiers you're editing. */}
         <div className="flex items-center gap-1" role="group" aria-label="Filter by position">
           {POSITIONS.map((pos) => (
             <button
@@ -69,7 +74,7 @@ export function FilterBar({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onFiltersChange({ ...filters, onlyMine: !filters.onlyMine })}
-            disabled={editMode}
+            disabled={anyEditing}
             aria-pressed={filters.onlyMine}
             className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               filters.onlyMine
@@ -82,7 +87,7 @@ export function FilterBar({
 
           <button
             onClick={() => onFiltersChange({ ...filters, onlyFavorites: !filters.onlyFavorites })}
-            disabled={editMode}
+            disabled={anyEditing}
             aria-pressed={filters.onlyFavorites}
             className={`flex items-center gap-1 rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               filters.onlyFavorites
@@ -97,13 +102,13 @@ export function FilterBar({
 
       <div className="flex items-center gap-4">
         <label
-          className={`flex items-center gap-1.5 font-mono text-[11px] text-ink-muted ${editMode ? "cursor-not-allowed opacity-40" : ""}`}
+          className={`flex items-center gap-1.5 font-mono text-[11px] text-ink-muted ${anyEditing ? "cursor-not-allowed opacity-40" : ""}`}
         >
           <input
             type="checkbox"
             checked={filters.hideDrafted}
             onChange={(e) => onFiltersChange({ ...filters, hideDrafted: e.target.checked })}
-            disabled={editMode}
+            disabled={anyEditing}
             className="h-3.5 w-3.5 accent-[var(--accent)] disabled:cursor-not-allowed"
           />
           hide drafted
@@ -124,26 +129,35 @@ export function FilterBar({
           <Trash2 size={12} /> reset draft
         </button>
 
-        <button
-          onClick={() => onEditModeChange(!editMode)}
-          role="switch"
-          aria-checked={editMode}
-          className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-wide text-ink-muted hover:text-ink"
-        >
-          <span
-            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${
-              editMode ? "bg-accent" : "bg-hairline"
-            }`}
-          >
-            <span
-              className={`inline-block h-3 w-3 transform rounded-full bg-panel transition-transform ${
-                editMode ? "translate-x-3.5" : "translate-x-0.5"
-              }`}
-            />
-          </span>
-          {editLabel}
-        </button>
+        {showEditModeToggle && (
+          <EditToggle label="edit mode" checked={editMode} onChange={onEditModeChange} />
+        )}
+        <EditToggle label="edit tiers" checked={tierEditMode} onChange={onTierEditModeChange} />
       </div>
     </div>
+  );
+}
+
+function EditToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!checked)}
+      role="switch"
+      aria-checked={checked}
+      className="flex items-center gap-2 font-mono text-[11px] font-medium tracking-wide text-ink-muted hover:text-ink"
+    >
+      <span
+        className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors ${
+          checked ? "bg-accent" : "bg-hairline"
+        }`}
+      >
+        <span
+          className={`inline-block h-3 w-3 transform rounded-full bg-panel transition-transform ${
+            checked ? "translate-x-3.5" : "translate-x-0.5"
+          }`}
+        />
+      </span>
+      {label}
+    </button>
   );
 }

@@ -39,6 +39,7 @@ interface BoardShellProps {
 
 export function BoardShell({ players, board, hydrated, actions }: BoardShellProps) {
   const [editMode, setEditMode] = useState(false);
+  const [tierEditMode, setTierEditMode] = useState(false);
   // Defaults to the board's own saved order, not ADP — otherwise a freshly loaded page shows
   // ADP order on top of the (correctly persisted) custom order, which reads as "my reorder didn't save."
   const [sortKey, setSortKey] = useState<SortKey>("mine");
@@ -74,10 +75,21 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
       setSortDir("asc");
       // Reordering moves a player to sit beside whatever's currently adjacent in customOrder —
       // if any filter is hiding players, "adjacent" in the visible list isn't adjacent in the
-      // real order, and the move silently reshuffles hidden players too. Clear every filter
-      // except position, which is left as-is: staying on a position page and turning editing on
-      // is exactly how you get into tier-editing for that position (see tierScope below) — forcing
-      // it back to ALL here would silently kick you out of the page you meant to edit.
+      // real order, and the move silently reshuffles hidden players too.
+      setFilters((f) => ({ ...f, search: "", hideDrafted: false, onlyMine: false, onlyFavorites: false }));
+    }
+  }
+
+  function handleTierEditModeChange(next: boolean) {
+    setTierEditMode(next);
+    if (next) {
+      // Tiers anchor to a player id, not an index, so unlike player reordering above this isn't
+      // strictly required for correctness — but a stable "mine" order keeps a tier rendering next
+      // to the same neighbors while you're editing it, rather than jumping around under whatever
+      // sort was active. Position stays as-is: switching position pills is how you pick which
+      // scope's tiers you're editing.
+      setSortKey("mine");
+      setSortDir("asc");
       setFilters((f) => ({ ...f, search: "", hideDrafted: false, onlyMine: false, onlyFavorites: false }));
     }
   }
@@ -95,6 +107,10 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
   // position-filter-reset above already guards against).
   const tierScope: TierScope = filters.position;
   const canDragPlayers = editMode && filters.position === "ALL";
+  // Editing players and editing tiers are independent toggles — otherwise turning on player edit
+  // mode on the ALL page also lights up every tier "+" gap and drag handle, cluttering the view
+  // for someone who just wants to reorder players.
+  const canEditTiers = tierEditMode;
   const scopeTiers = useMemo(
     () => (board.tiers ?? []).filter((t) => t.scope === tierScope),
     [board.tiers, tierScope]
@@ -125,6 +141,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={handleEditModeChange}
+        tierEditMode={tierEditMode}
+        onTierEditModeChange={handleTierEditModeChange}
         tierScope={tierScope}
         onReset={() => {
           if (window.confirm("Reset your custom order back to ADP order?")) {
@@ -162,7 +180,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           sortKey={sortKey}
           sortDir={sortDir}
           format={format}
-          groupByPosition={filters.onlyMine && !editMode}
+          groupByPosition={filters.onlyMine && !editMode && !tierEditMode}
+          canEditTiers={canEditTiers}
           tierScope={tierScope}
           scopeTiers={scopeTiers}
           onSortChange={handleSortChange}

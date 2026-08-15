@@ -21,6 +21,7 @@ interface PlayerTableProps {
   rows: BoardRow[];
   editMode: boolean;
   canDragPlayers: boolean;
+  canEditTiers: boolean;
   sortKey: SortKey;
   sortDir: SortDir;
   format: RankingFormat;
@@ -97,6 +98,7 @@ export function PlayerTable({
   rows,
   editMode,
   canDragPlayers,
+  canEditTiers,
   sortKey,
   sortDir,
   format,
@@ -228,12 +230,12 @@ export function PlayerTable({
                         key={tier.id}
                         tier={tier}
                         number={number}
-                        canDrag={editMode}
+                        canDrag={canEditTiers}
                         onRename={onRenameTier}
                         onRemove={onRemoveTier}
                       />
                     ))}
-                    {editMode && <AddTierGap onAdd={() => onAddTier(tierScope, item.gapBeforePlayerId)} />}
+                    {canEditTiers && <AddTierGap onAdd={() => onAddTier(tierScope, item.gapBeforePlayerId)} />}
                   </Fragment>
                 ) : (
                   renderPlayerRow(item.row)
