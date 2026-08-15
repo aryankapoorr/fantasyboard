@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Radar, MousePointer2, ListChecks, RefreshCw, ImageIcon, StickyNote } from "lucide-react";
+import { Radar, MousePointer2, ListChecks, StickyNote, Layers, Filter } from "lucide-react";
 import playersData from "@/data/players.json";
 import { useAuth } from "@/lib/auth";
 import { PlayerAvatar } from "@/components/PlayerAvatar";
@@ -14,18 +14,23 @@ import type { Player } from "@/lib/types";
 const FEATURES = [
   {
     icon: Radar,
-    title: "Consensus + live ADP",
-    body: "Expert consensus rankings merged with real-time average draft position, so you always know where the market sits.",
+    title: "Live ADP for the entire player pool",
+    body: "Every draftable player — not just the household names — ranked and priced straight from ESPN's live draft data, refreshed daily.",
   },
   {
-    icon: ImageIcon,
-    title: "See every face, not just a name",
-    body: "Real player photos next to every row. Click any name for projections, last season's stats, and their full draft signal.",
+    icon: Layers,
+    title: "Build your own tiers",
+    body: "Drop in tier breaks anywhere on the board — for everyone, or for a single position — and drag them wherever the value actually falls off.",
   },
   {
     icon: MousePointer2,
     title: "Drag to your own order",
     body: "Reorder every player into your personal board. Compare your ranks against consensus and ADP side by side.",
+  },
+  {
+    icon: Filter,
+    title: "Filter by position, flex, or your roster",
+    body: "Jump straight to QBs, flex-eligible backs, or just the team you've already drafted, without losing your custom order underneath.",
   },
   {
     icon: ListChecks,
@@ -36,11 +41,6 @@ const FEATURES = [
     icon: StickyNote,
     title: "Favorite players, keep notes",
     body: "Star your targets and jot a note on anyone — \"buy the dip,\" \"contract dispute\" — saved right on your board.",
-  },
-  {
-    icon: RefreshCw,
-    title: "Save every board",
-    body: "Sign in with Google to create and name multiple boards, synced in real time across every device.",
   },
 ] as const;
 
@@ -112,7 +112,7 @@ export default function Home() {
             </h1>
             <p className="mt-5 max-w-md text-[15px] leading-relaxed text-ink-muted">
               Consensus expert rankings and live ADP, merged into one board you drag into your
-              own order — then track every pick as the draft happens.
+              own order, break into tiers, and track pick by pick as the draft happens.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
