@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, RotateCcw, Star, Trash2, Users } from "lucide-react";
-import type { Position } from "@/lib/types";
+import type { Position, TierScope } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
 const POSITIONS: (Position | "ALL" | "FLEX")[] = ["ALL", "QB", "RB", "WR", "TE", "FLEX", "K", "DST"];
@@ -11,6 +11,7 @@ interface FilterBarProps {
   onFiltersChange: (next: FilterState) => void;
   editMode: boolean;
   onEditModeChange: (next: boolean) => void;
+  tierScope: TierScope;
   onReset: () => void;
   onResetDraft: () => void;
   draftedCount: number;
@@ -21,10 +22,15 @@ export function FilterBar({
   onFiltersChange,
   editMode,
   onEditModeChange,
+  tierScope,
   onReset,
   onResetDraft,
   draftedCount,
 }: FilterBarProps) {
+  // Off the ALL page (a real position, or FLEX), editing means "edit that scope's tiers" —
+  // players there are never draggable (see BoardShell's canDragPlayers), so calling it
+  // "edit mode" would overpromise.
+  const editLabel = tierScope !== "ALL" ? "edit tiers" : "edit mode";
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-hairline bg-panel/95 px-3 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -42,13 +48,12 @@ export function FilterBar({
         </div>
 
         {/* Position pills stay usable in edit mode (unlike every other filter below) — they pick
-            which scope's tiers you're editing. Only FLEX is blocked, since there's no flex tier. */}
+            which scope's tiers you're editing. */}
         <div className="flex items-center gap-1" role="group" aria-label="Filter by position">
           {POSITIONS.map((pos) => (
             <button
               key={pos}
               onClick={() => onFiltersChange({ ...filters, position: pos })}
-              disabled={pos === "FLEX" && editMode}
               aria-pressed={filters.position === pos}
               className={`rounded border px-2 py-1 font-mono text-[11px] font-medium tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                 filters.position === pos
@@ -136,7 +141,7 @@ export function FilterBar({
               }`}
             />
           </span>
-          edit mode
+          {editLabel}
         </button>
       </div>
     </div>

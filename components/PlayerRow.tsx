@@ -111,14 +111,19 @@ export function PlayerRow({
             : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
         }`}
       >
-        <div className={`items-center gap-1 ${editMode ? "flex h-6" : "hidden h-6 w-6 sm:flex sm:invisible"}`}>
-          <div
-            aria-hidden="true"
-            className={`flex h-6 w-6 shrink-0 items-center justify-center text-ink-faint ${canDrag ? "" : "opacity-30"}`}
-          >
+        {/* This column's grid slot only exists in the layout when editMode's template reserves it
+            (see grid-cols above) — so on !canDrag it must stay `flex` and go `invisible` rather
+            than `hidden`, or CSS grid drops it entirely and every later column shifts left by one,
+            most visibly breaking the compact mobile template while editing a position's tiers. */}
+        <div
+          className={`items-center gap-1 ${
+            editMode ? `flex h-6 ${canDrag ? "" : "invisible"}` : "hidden h-6 w-6 sm:flex sm:invisible"
+          }`}
+        >
+          <div aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center text-ink-faint">
             <GripVertical size={15} />
           </div>
-          {editMode && (
+          {canDrag && (
             <div className="hidden items-center gap-1 sm:flex">
               <button
                 onClick={() => onMoveUp(row.id)}
@@ -222,7 +227,7 @@ export function PlayerRow({
         </div>
       </div>
 
-      {editMode && (
+      {canDrag && (
         <div className="flex items-center gap-1.5 border-t border-hairline/60 px-3 py-1.5 sm:hidden">
           <button
             onClick={() => onMoveUp(row.id)}

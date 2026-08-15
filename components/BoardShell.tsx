@@ -74,9 +74,11 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
       setSortDir("asc");
       // Reordering moves a player to sit beside whatever's currently adjacent in customOrder —
       // if any filter is hiding players, "adjacent" in the visible list isn't adjacent in the
-      // real order, and the move silently reshuffles hidden players too. Clear filters so edit
-      // mode always operates on the full, unfiltered board.
-      setFilters({ search: "", position: "ALL", hideDrafted: false, onlyMine: false, onlyFavorites: false });
+      // real order, and the move silently reshuffles hidden players too. Clear every filter
+      // except position, which is left as-is: staying on a position page and turning editing on
+      // is exactly how you get into tier-editing for that position (see tierScope below) — forcing
+      // it back to ALL here would silently kick you out of the page you meant to edit.
+      setFilters((f) => ({ ...f, search: "", hideDrafted: false, onlyMine: false, onlyFavorites: false }));
     }
   }
 
@@ -86,16 +88,15 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     return filterAndSortRows(built, filters, sortKey, sortDir);
   }, [hydrated, players, board, filters, sortKey, sortDir, format]);
 
-  // Tiers exist for the whole board and for each real position, but not for the FLEX pseudo-
-  // filter (RB/WR/TE mixed — there's no single position's tier list that applies). Player drag
-  // reordering only ever runs at the unfiltered ALL scope: reordering within a filtered subset
-  // would splice against filtered-list adjacency and corrupt the real customOrder for hidden
-  // players (the bug the position-filter-reset above already guards against).
-  const tierScope: TierScope | null =
-    filters.position === "FLEX" ? null : filters.position === "ALL" ? "ALL" : filters.position;
+  // Tiers exist for the whole board, for each real position, and for the FLEX view — every value
+  // `filters.position` can take has its own tier list. Player drag reordering only ever runs at
+  // the unfiltered ALL scope, though: reordering within a filtered subset would splice against
+  // filtered-list adjacency and corrupt the real customOrder for hidden players (the bug the
+  // position-filter-reset above already guards against).
+  const tierScope: TierScope = filters.position;
   const canDragPlayers = editMode && filters.position === "ALL";
   const scopeTiers = useMemo(
-    () => (tierScope === null ? [] : (board.tiers ?? []).filter((t) => t.scope === tierScope)),
+    () => (board.tiers ?? []).filter((t) => t.scope === tierScope),
     [board.tiers, tierScope]
   );
 
@@ -124,6 +125,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={handleEditModeChange}
+        tierScope={tierScope}
         onReset={() => {
           if (window.confirm("Reset your custom order back to ADP order?")) {
             actions.resetOrder(adpOrderedIds);

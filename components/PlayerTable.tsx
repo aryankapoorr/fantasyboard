@@ -25,7 +25,7 @@ interface PlayerTableProps {
   sortDir: SortDir;
   format: RankingFormat;
   groupByPosition?: boolean;
-  tierScope: TierScope | null;
+  tierScope: TierScope;
   scopeTiers: Tier[];
   onSortChange: (key: SortKey) => void;
   onReorder: (activeId: string, overId: string) => void;
@@ -122,7 +122,6 @@ export function PlayerTable({
   const interleaved = useMemo(() => interleaveTiers(rows, scopeTiers), [rows, scopeTiers]);
   const displayItems = useMemo(() => buildDisplayItems(rows, scopeTiers), [rows, scopeTiers]);
   const indexById = new Map(rows.map((r, i) => [r.id, i]));
-  const canAddTiers = editMode && tierScope !== null;
 
   // Chevrons only ever move a player past its nearest player neighbor — any tier line between
   // them just follows its anchor player wherever it goes, so there's nothing extra to resolve
@@ -145,7 +144,7 @@ export function PlayerTable({
     const result = resolveInterleavedDragEnd(interleaved, String(active.id), String(over.id));
     if (!result) return;
     if (result.type === "tier") {
-      if (tierScope) onReorderTiers(tierScope, result.ordered);
+      onReorderTiers(tierScope, result.ordered);
     } else {
       onReorder(result.activeId, result.overId);
     }
@@ -234,7 +233,7 @@ export function PlayerTable({
                         onRemove={onRemoveTier}
                       />
                     ))}
-                    {canAddTiers && <AddTierGap onAdd={() => onAddTier(tierScope!, item.gapBeforePlayerId)} />}
+                    {editMode && <AddTierGap onAdd={() => onAddTier(tierScope, item.gapBeforePlayerId)} />}
                   </Fragment>
                 ) : (
                   renderPlayerRow(item.row)

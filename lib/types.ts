@@ -87,11 +87,12 @@ export interface DraftPickState {
   draftedAt?: string;
 }
 
-// A tier is a visual divider ("Tier N") that groups players within one scope — either the whole
-// board ("ALL") or a single real position. It's independent of `customOrder`: `beforePlayerId`
-// anchors it to whichever player currently renders right below it in that scope, so it travels
-// naturally as players are reordered rather than pinning to a fixed index.
-export type TierScope = "ALL" | Position;
+// A tier is a visual divider ("Tier N") that groups players within one scope — the whole board
+// ("ALL"), a single real position, or the FLEX view (RB/WR/TE combined). It's independent of
+// `customOrder`: `beforePlayerId` anchors it to whichever player currently renders right below it
+// in that scope, so it travels naturally as players are reordered rather than pinning to a fixed
+// index.
+export type TierScope = "ALL" | Position | "FLEX";
 
 export interface Tier {
   id: string; // `tier:${uuid}` — prefixed so it's cheaply distinguishable from a (bare numeric) player id
