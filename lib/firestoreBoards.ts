@@ -72,6 +72,7 @@ interface FirestoreBoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  resetDraft: () => void;
   toggleFavorite: (playerId: string) => void;
   setNote: (playerId: string, text: string) => void;
   rename: (name: string) => void;
@@ -144,6 +145,14 @@ export function useFirestoreBoard(
       if (!uid || !boardId) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
         [`draftPicks.${playerId}`]: deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+    },
+    resetDraft: () => {
+      if (!uid || !boardId) return;
+      void updateDoc(doc(db, "users", uid, "boards", boardId), {
+        draftPicks: {},
+        nextPickNumber: 1,
         updatedAt: serverTimestamp(),
       });
     },

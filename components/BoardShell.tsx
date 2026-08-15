@@ -21,6 +21,7 @@ export interface BoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  resetDraft: () => void;
   toggleFavorite: (playerId: string) => void;
   setNote: (playerId: string, text: string) => void;
 }
@@ -99,7 +100,18 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onFiltersChange={setFilters}
         editMode={editMode}
         onEditModeChange={handleEditModeChange}
-        onReset={() => actions.resetOrder(adpOrderedIds)}
+        onReset={() => {
+          if (window.confirm("Reset your custom order back to ADP order?")) {
+            actions.resetOrder(adpOrderedIds);
+          }
+        }}
+        onResetDraft={() => {
+          if (draftedCount === 0) return;
+          if (window.confirm(`Undraft all ${draftedCount} player${draftedCount === 1 ? "" : "s"} and start the board fresh?`)) {
+            actions.resetDraft();
+          }
+        }}
+        draftedCount={draftedCount}
       />
       <div
         className={`flex flex-col gap-1 px-3 py-2 font-mono text-[11px] sm:flex-row sm:items-center sm:justify-between ${

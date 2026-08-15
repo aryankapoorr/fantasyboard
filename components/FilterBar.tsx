@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, RotateCcw, Star, Users } from "lucide-react";
+import { Search, RotateCcw, Star, Trash2, Users } from "lucide-react";
 import type { Position } from "@/lib/types";
 import type { FilterState } from "@/lib/derive";
 
@@ -12,9 +12,19 @@ interface FilterBarProps {
   editMode: boolean;
   onEditModeChange: (next: boolean) => void;
   onReset: () => void;
+  onResetDraft: () => void;
+  draftedCount: number;
 }
 
-export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange, onReset }: FilterBarProps) {
+export function FilterBar({
+  filters,
+  onFiltersChange,
+  editMode,
+  onEditModeChange,
+  onReset,
+  onResetDraft,
+  draftedCount,
+}: FilterBarProps) {
   return (
     <div className="sticky top-0 z-20 flex flex-col gap-3 border-b border-hairline bg-panel/95 px-3 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -90,6 +100,14 @@ export function FilterBar({ filters, onFiltersChange, editMode, onEditModeChange
           className="flex items-center gap-1 font-mono text-[11px] text-ink-muted hover:text-ink"
         >
           <RotateCcw size={12} /> reset to adp
+        </button>
+
+        <button
+          onClick={onResetDraft}
+          disabled={draftedCount === 0}
+          className="flex items-center gap-1 font-mono text-[11px] text-ink-muted hover:text-ink disabled:opacity-30 disabled:hover:text-ink-muted"
+        >
+          <Trash2 size={12} /> reset draft
         </button>
 
         <button

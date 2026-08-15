@@ -13,6 +13,7 @@ interface BoardActions {
   resetOrder: (orderedIds: string[]) => void;
   setDraftStatus: (playerId: string, status: DraftStatus) => void;
   undraft: (playerId: string) => void;
+  resetDraft: () => void;
   toggleFavorite: (playerId: string) => void;
   setNote: (playerId: string, text: string) => void;
 }
@@ -74,6 +75,10 @@ export const useBoardStore = create<BoardStore>()(
         const next = { ...draftPicks };
         delete next[playerId];
         set({ draftPicks: next });
+      },
+
+      resetDraft: () => {
+        set({ draftPicks: {}, nextPickNumber: 1 });
       },
 
       toggleFavorite: (playerId) => {

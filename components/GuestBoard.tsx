@@ -61,6 +61,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
         resetOrder: store.resetOrder,
         setDraftStatus: store.setDraftStatus,
         undraft: store.undraft,
+        resetDraft: store.resetDraft,
         toggleFavorite: store.toggleFavorite,
         setNote: store.setNote,
       }}
