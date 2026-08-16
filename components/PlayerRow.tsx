@@ -99,6 +99,11 @@ const PlayerRowContent = memo(function PlayerRowContent({
   ref,
 }: PlayerRowContentProps) {
   const isDrafted = row.draftStatus !== "available";
+  const draftedByMe = row.draftStatus === "drafted_by_me";
+  // Drafted-by-me stays fully legible with a green tint — it's a player you want to keep an eye on,
+  // not one to fade out. Drafted-by-other keeps the dim/grayed treatment, since it's effectively
+  // off the board for you.
+  const draftedByOther = row.draftStatus === "drafted_by_other";
 
   return (
     <div
@@ -107,8 +112,14 @@ const PlayerRowContent = memo(function PlayerRowContent({
       {...dragHandleProps}
       aria-label={canDrag ? `Drag to reorder ${row.name}` : undefined}
       className={`border-b border-hairline transition-colors ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} ${
-        isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : isHighlighted ? "bg-accent/15 ring-1 ring-inset ring-accent" : "bg-panel"
-      } ${isDrafted ? "opacity-40" : ""}`}
+        isDragging
+          ? "z-10 bg-panel-raised shadow-lg shadow-black/40"
+          : isHighlighted
+            ? "bg-accent/15 ring-1 ring-inset ring-accent"
+            : draftedByMe
+              ? "bg-value/10 ring-1 ring-inset ring-value/30"
+              : "bg-panel"
+      } ${draftedByOther ? "opacity-40" : ""}`}
     >
       <div
         className={`group grid items-center gap-2 px-3 py-2.5 sm:gap-3 ${
