@@ -118,7 +118,7 @@ export function FilterBar({
           onClick={onReset}
           className="flex items-center gap-1 font-mono text-[11px] text-ink-muted hover:text-ink"
         >
-          <RotateCcw size={12} /> reset to fp rank
+          <RotateCcw size={12} /> reset rankings
         </button>
 
         <button

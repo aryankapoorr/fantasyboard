@@ -12,6 +12,7 @@ import {
   type SortKey,
 } from "@/lib/derive";
 import type { BoardState, DraftStatus, Player, TierScope } from "@/lib/types";
+import { ColumnLegend } from "./ColumnLegend";
 import { FilterBar } from "./FilterBar";
 import { PlayerDetailModal } from "./PlayerDetailModal";
 import { PlayerTable } from "./PlayerTable";
@@ -170,7 +171,10 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
             </span>
           )}
         </div>
-        <span>{draftedCount} drafted</span>
+        <span className="inline-flex items-center gap-1.5">
+          {draftedCount} drafted
+          <ColumnLegend />
+        </span>
       </div>
       <div className="px-3 pb-6">
         <PlayerTable
