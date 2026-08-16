@@ -4,7 +4,6 @@ import { safeLocalStorage } from "./storage";
 import {
   addTier as addTierOp,
   applyNote,
-  applyTierOrder,
   computeDraftPickUpdate,
   mergeMissingByDefaultOrder,
   removeTier as removeTierOp,
@@ -29,7 +28,6 @@ interface BoardActions {
   addTier: (scope: TierScope, beforePlayerId: string | null) => void;
   removeTier: (tierId: string) => void;
   renameTier: (tierId: string, label: string) => void;
-  reorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 type BoardStore = BoardState & BoardActions;
@@ -113,10 +111,6 @@ export const useBoardStore = create<BoardStore>()(
 
       renameTier: (tierId, label) => {
         set({ tiers: renameTierOp(get().tiers, tierId, label) });
-      },
-
-      reorderTiers: (scope, ordered) => {
-        set({ tiers: applyTierOrder(get().tiers, scope, ordered) });
       },
     }),
     {

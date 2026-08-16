@@ -1,21 +1,38 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { Fragment, useCallback, useMemo, useState } from "react";
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { Plus } from "lucide-react";
-import { PlayerRow } from "./PlayerRow";
+import { PlayerRow, PlayerRowOverlay } from "./PlayerRow";
 import { TierRow } from "./TierRow";
 import {
   buildDisplayItems,
   groupRowsByPosition,
   interleaveTiers,
-  resolveInterleavedDragEnd,
   type BoardRow,
+  type DisplayItem,
   type SortDir,
   type SortKey,
 } from "@/lib/derive";
 import type { RankingFormat, Tier, TierScope } from "@/lib/types";
+
+// Rough per-item height guesses for the pre-measurement total-scroll-height estimate — must stay
+// breakpoint-agnostic (no `window`/`document` access) since this also runs during SSR.
+// `measureElement`'s ResizeObserver corrects every item's real height after it first mounts.
+const PLAYER_ROW_ESTIMATE = 78;
+const TIER_ROW_ESTIMATE = 34;
+const ADD_TIER_GAP_ESTIMATE = 16;
+
+function estimateDisplayItemSize(item: DisplayItem, canEditTiers: boolean): number {
+  if (item.type === "row") return PLAYER_ROW_ESTIMATE;
+  return item.tiers.length * TIER_ROW_ESTIMATE + (canEditTiers ? ADD_TIER_GAP_ESTIMATE : 0);
+}
+
+function displayItemKey(item: DisplayItem): string {
+  return item.type === "row" ? item.row.id : `gap-${item.gapBeforePlayerId ?? "end"}`;
+}
 
 interface PlayerTableProps {
   rows: BoardRow[];
@@ -38,7 +55,6 @@ interface PlayerTableProps {
   onAddTier: (scope: TierScope, beforePlayerId: string | null) => void;
   onRemoveTier: (tierId: string) => void;
   onRenameTier: (tierId: string, label: string) => void;
-  onReorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 function HeaderCell({
@@ -115,41 +131,66 @@ export function PlayerTable({
   onAddTier,
   onRemoveTier,
   onRenameTier,
-  onReorderTiers,
 }: PlayerTableProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const formatLabel = format === "ppr" ? "PPR" : "STD";
   const groups = groupByPosition ? groupRowsByPosition(rows) : null;
 
-  const interleaved = useMemo(() => interleaveTiers(rows, scopeTiers), [rows, scopeTiers]);
   const displayItems = useMemo(() => buildDisplayItems(rows, scopeTiers), [rows, scopeTiers]);
-  const indexById = new Map(rows.map((r, i) => [r.id, i]));
+  const indexById = useMemo(() => new Map(rows.map((r, i) => [r.id, i])), [rows]);
+  const rowById = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
+
+  // Only players are draggable (tiers are fixed once placed — see TierRow), so the active drag
+  // item, if any, is always a row.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeRow = activeId ? (rowById.get(activeId) ?? null) : null;
+
+  // A `useState`-backed callback ref, not `useRef` — reading `.offsetTop` from a plain state value
+  // during render is fine; reading `useRef().current` during render is not (flagged by the
+  // react-hooks/refs rule, since it can silently desync from what was actually committed).
+  const [listElement, setListElement] = useState<HTMLDivElement | null>(null);
+  const rowVirtualizer = useWindowVirtualizer({
+    count: displayItems.length,
+    estimateSize: (index) => estimateDisplayItemSize(displayItems[index], canEditTiers),
+    overscan: 12,
+    scrollMargin: listElement?.offsetTop ?? 0,
+    getItemKey: (index) => displayItemKey(displayItems[index]),
+  });
 
   // Chevrons only ever move a player past its nearest player neighbor — any tier line between
   // them just follows its anchor player wherever it goes, so there's nothing extra to resolve
   // here (unlike pointer drag, which can drop a player directly onto a tier's row).
-  function handleMoveUp(id: string) {
-    const index = indexById.get(id);
-    if (index === undefined || index === 0) return;
-    onReorder(id, rows[index - 1].id);
-  }
+  const handleMoveUp = useCallback(
+    (id: string) => {
+      const index = indexById.get(id);
+      if (index === undefined || index === 0) return;
+      onReorder(id, rows[index - 1].id);
+    },
+    [indexById, rows, onReorder]
+  );
 
-  function handleMoveDown(id: string) {
-    const index = indexById.get(id);
-    if (index === undefined || index === rows.length - 1) return;
-    onReorder(id, rows[index + 1].id);
+  const handleMoveDown = useCallback(
+    (id: string) => {
+      const index = indexById.get(id);
+      if (index === undefined || index === rows.length - 1) return;
+      onReorder(id, rows[index + 1].id);
+    },
+    [indexById, rows, onReorder]
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     const { active, over } = event;
-    if (!over) return;
-    const result = resolveInterleavedDragEnd(interleaved, String(active.id), String(over.id));
-    if (!result) return;
-    if (result.type === "tier") {
-      onReorderTiers(tierScope, result.ordered);
-    } else {
-      onReorder(result.activeId, result.overId);
-    }
+    if (!over || active.id === over.id) return;
+    onReorder(String(active.id), String(over.id));
+  }
+
+  function handleDragCancel() {
+    setActiveId(null);
   }
 
   function renderPlayerRow(row: BoardRow) {
@@ -170,6 +211,27 @@ export function PlayerTable({
         onOpenDetail={onOpenDetail}
       />
     );
+  }
+
+  function renderDisplayItem(item: DisplayItem) {
+    if (item.type === "gap") {
+      return (
+        <>
+          {item.tiers.map(({ tier, number }) => (
+            <TierRow
+              key={tier.id}
+              tier={tier}
+              number={number}
+              canEdit={canEditTiers}
+              onRename={onRenameTier}
+              onRemove={onRemoveTier}
+            />
+          ))}
+          {canEditTiers && <AddTierGap onAdd={() => onAddTier(tierScope, item.gapBeforePlayerId)} />}
+        </>
+      );
+    }
+    return renderPlayerRow(item.row);
   }
 
   return (
@@ -196,53 +258,65 @@ export function PlayerTable({
         </div>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={interleaved.map((item) => (item.type === "tier" ? item.tier.id : item.row.id))}
-          strategy={verticalListSortingStrategy}
-        >
-          {groups
-            ? groups.map((group) => (
-                <Fragment key={group.position}>
-                  <div className="border-b border-hairline bg-panel-raised px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
-                    {group.position} · {group.rows.length}
-                  </div>
-                  {interleaveTiers(group.rows, scopeTiers).map((item) =>
-                    item.type === "tier" ? (
-                      <TierRow
-                        key={item.tier.id}
-                        tier={item.tier}
-                        number={item.number}
-                        canDrag={false}
-                        onRename={onRenameTier}
-                        onRemove={onRemoveTier}
-                      />
-                    ) : (
-                      renderPlayerRow(item.row)
-                    )
-                  )}
-                </Fragment>
-              ))
-            : displayItems.map((item) =>
-                item.type === "gap" ? (
-                  <Fragment key={`gap-${item.gapBeforePlayerId ?? "end"}`}>
-                    {item.tiers.map(({ tier, number }) => (
-                      <TierRow
-                        key={tier.id}
-                        tier={tier}
-                        number={number}
-                        canDrag={canEditTiers}
-                        onRename={onRenameTier}
-                        onRemove={onRemoveTier}
-                      />
-                    ))}
-                    {canEditTiers && <AddTierGap onAdd={() => onAddTier(tierScope, item.gapBeforePlayerId)} />}
-                  </Fragment>
-                ) : (
-                  renderPlayerRow(item.row)
-                )
-              )}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+          {groups ? (
+            groups.map((group) => (
+              <Fragment key={group.position}>
+                <div className="border-b border-hairline bg-panel-raised px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
+                  {group.position} · {group.rows.length}
+                </div>
+                {interleaveTiers(group.rows, scopeTiers).map((item) =>
+                  item.type === "tier" ? (
+                    <TierRow
+                      key={item.tier.id}
+                      tier={item.tier}
+                      number={item.number}
+                      canEdit={false}
+                      onRename={onRenameTier}
+                      onRemove={onRemoveTier}
+                    />
+                  ) : (
+                    renderPlayerRow(item.row)
+                  )
+                )}
+              </Fragment>
+            ))
+          ) : (
+            // Only up to ~overscan*2 + visible-row-count display items are actually mounted at
+            // once here — this is what keeps dnd-kit's collision detection (which scans every
+            // currently-registered droppable on each pointer move) cheap even with a
+            // thousand-plus-player board. See the "Fix laggy player drag-and-drop" plan for the
+            // full rationale.
+            <div ref={setListElement} className="relative" style={{ height: rowVirtualizer.getTotalSize() }}>
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    transform: `translateY(${virtualItem.start - rowVirtualizer.options.scrollMargin}px)`,
+                  }}
+                >
+                  {renderDisplayItem(displayItems[virtualItem.index])}
+                </div>
+              ))}
+            </div>
+          )}
         </SortableContext>
+        <DragOverlay>
+          {activeRow ? <PlayerRowOverlay row={activeRow} editMode={editMode} canDrag={canDragPlayers} /> : null}
+        </DragOverlay>
       </DndContext>
 
       {rows.length === 0 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, type CSSProperties } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronUp, GripVertical, Star, Undo2 } from "lucide-react";
@@ -52,12 +53,15 @@ function abbreviateName(row: BoardRow): string {
   return `${parts[0][0]}. ${parts.slice(1).join(" ")}`;
 }
 
-interface PlayerRowProps {
+const noop = () => {};
+
+interface PlayerRowContentProps {
   row: BoardRow;
   editMode: boolean;
   canDrag: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  isDragging: boolean;
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
   onDraftMe: (id: string) => void;
@@ -65,14 +69,22 @@ interface PlayerRowProps {
   onUndraft: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onOpenDetail: (id: string) => void;
+  style?: CSSProperties;
+  dragHandleProps?: Record<string, unknown>;
+  ref?: React.Ref<HTMLDivElement>;
 }
 
-export function PlayerRow({
+// Hook-free presentational body, shared by the sortable `PlayerRow` (below) and `PlayerRowOverlay`
+// (the floating `DragOverlay` ghost) — kept separate so the overlay copy never calls `useSortable`
+// itself, which would register a second draggable/droppable against the same row id as the real,
+// still-mounted row underneath it.
+const PlayerRowContent = memo(function PlayerRowContent({
   row,
   editMode,
   canDrag,
   canMoveUp,
   canMoveDown,
+  isDragging,
   onMoveUp,
   onMoveDown,
   onDraftMe,
@@ -80,25 +92,17 @@ export function PlayerRow({
   onUndraft,
   onToggleFavorite,
   onOpenDetail,
-}: PlayerRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: row.id,
-    disabled: !canDrag,
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
+  style,
+  dragHandleProps,
+  ref,
+}: PlayerRowContentProps) {
   const isDrafted = row.draftStatus !== "available";
 
   return (
     <div
-      ref={setNodeRef}
+      ref={ref}
       style={style}
-      {...(canDrag ? attributes : {})}
-      {...(canDrag ? listeners : {})}
+      {...dragHandleProps}
       aria-label={canDrag ? `Drag to reorder ${row.name}` : undefined}
       className={`border-b border-hairline transition-colors ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} ${
         isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
@@ -254,5 +258,66 @@ export function PlayerRow({
         </div>
       )}
     </div>
+  );
+});
+
+interface PlayerRowProps {
+  row: BoardRow;
+  editMode: boolean;
+  canDrag: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onDraftMe: (id: string) => void;
+  onDraftOther: (id: string) => void;
+  onUndraft: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onOpenDetail: (id: string) => void;
+}
+
+export const PlayerRow = memo(function PlayerRow(props: PlayerRowProps) {
+  const { row, canDrag } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: row.id,
+    disabled: !canDrag,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <PlayerRowContent
+      {...props}
+      ref={setNodeRef}
+      style={style}
+      dragHandleProps={canDrag ? { ...attributes, ...listeners } : undefined}
+      isDragging={isDragging}
+    />
+  );
+});
+
+// Floating ghost rendered inside `PlayerTable`'s `DragOverlay` — deliberately has no `useSortable`
+// call (see `PlayerRowContent`'s comment above) and no interactive handlers, since the overlay is a
+// pointer-following visual clone, not the real row the user is interacting with.
+export function PlayerRowOverlay({ row, editMode, canDrag }: { row: BoardRow; editMode: boolean; canDrag: boolean }) {
+  return (
+    <PlayerRowContent
+      row={row}
+      editMode={editMode}
+      canDrag={canDrag}
+      canMoveUp={false}
+      canMoveDown={false}
+      isDragging
+      onMoveUp={noop}
+      onMoveDown={noop}
+      onDraftMe={noop}
+      onDraftOther={noop}
+      onUndraft={noop}
+      onToggleFavorite={noop}
+      onOpenDetail={noop}
+    />
   );
 }

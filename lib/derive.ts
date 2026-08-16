@@ -1,4 +1,3 @@
-import { arrayMove } from "@dnd-kit/sortable";
 import { normalizeName } from "./normalize";
 import type { BoardState, DraftStatus, Player, Position, RankingFormat, Tier } from "./types";
 
@@ -188,69 +187,3 @@ export function buildDisplayItems(rows: BoardRow[], scopeTiers: Tier[]): Display
   return items;
 }
 
-export type DragResolution =
-  | { type: "tier"; ordered: { id: string; beforePlayerId: string | null }[] }
-  | { type: "player"; activeId: string; overId: string };
-
-// Resolves a dnd-kit drag-end against the current interleaved [players + tiers] sequence for one
-// scope. (Mobile move-up/down chevrons don't go through this — they only ever swap a player with
-// its nearest player neighbor, since a tier line between them just follows its anchor wherever
-// that player goes; this function is only needed where a drop can land directly on a tier's row.)
-//
-// Dragging a tier: uses arrayMove so the recomputed order matches what the user visually saw
-// mid-drag, then recomputes EVERY same-scope tier's anchor (the next player entry found scanning
-// forward, skipping adjacent tiers; null if none remain) — not just the dragged tier's. Multiple
-// tiers can share one anchor (stacked in the same gap), and interleaveTiers only disambiguates
-// same-anchor tiers by array order, so a single-field patch would silently fail to reorder them.
-//
-// Dragging a player (only ever invoked when player-dragging is enabled by the caller): if dropped
-// onto a tier's slot, resolves to that tier's own anchor player (or the last in-scope player if
-// the tier is trailing) so a bare `tier:` id never reaches spliceReorder, which only understands
-// player ids.
-export function resolveInterleavedDragEnd(
-  interleaved: InterleavedItem[],
-  activeId: string,
-  overId: string
-): DragResolution | null {
-  if (activeId === overId) return null;
-  const idOf = (item: InterleavedItem) => (item.type === "tier" ? item.tier.id : item.row.id);
-  const flatIds = interleaved.map(idOf);
-  const fromIndex = flatIds.indexOf(activeId);
-  const toIndex = flatIds.indexOf(overId);
-  if (fromIndex === -1 || toIndex === -1) return null;
-
-  if (activeId.startsWith("tier:")) {
-    const moved = arrayMove(interleaved, fromIndex, toIndex);
-    const ordered: { id: string; beforePlayerId: string | null }[] = [];
-    for (let i = 0; i < moved.length; i++) {
-      const item = moved[i];
-      if (item.type !== "tier") continue;
-      let anchor: string | null = null;
-      for (let j = i + 1; j < moved.length; j++) {
-        const next = moved[j];
-        if (next.type === "player") {
-          anchor = next.row.id;
-          break;
-        }
-      }
-      ordered.push({ id: item.tier.id, beforePlayerId: anchor });
-    }
-    return { type: "tier", ordered };
-  }
-
-  const overItem = interleaved[toIndex];
-  let resolvedOverId: string;
-  if (overItem.type === "player") {
-    resolvedOverId = overItem.row.id;
-  } else if (overItem.tier.beforePlayerId !== null) {
-    resolvedOverId = overItem.tier.beforePlayerId;
-  } else {
-    const lastPlayer = [...interleaved]
-      .reverse()
-      .find((item): item is Extract<InterleavedItem, { type: "player" }> => item.type === "player" && item.row.id !== activeId);
-    if (!lastPlayer) return null;
-    resolvedOverId = lastPlayer.row.id;
-  }
-  if (resolvedOverId === activeId) return null;
-  return { type: "player", activeId, overId: resolvedOverId };
-}

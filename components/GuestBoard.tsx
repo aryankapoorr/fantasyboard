@@ -67,7 +67,6 @@ export function GuestBoard({ players }: { players: Player[] }) {
         addTier: store.addTier,
         removeTier: store.removeTier,
         renameTier: store.renameTier,
-        reorderTiers: store.reorderTiers,
       }}
     />
   );

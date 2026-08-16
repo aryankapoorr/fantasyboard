@@ -28,7 +28,6 @@ export interface BoardActions {
   addTier: (scope: TierScope, beforePlayerId: string | null) => void;
   removeTier: (tierId: string) => void;
   renameTier: (tierId: string, label: string) => void;
-  reorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 interface BoardShellProps {
@@ -198,7 +197,6 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           onAddTier={actions.addTier}
           onRemoveTier={actions.removeTier}
           onRenameTier={actions.renameTier}
-          onReorderTiers={actions.reorderTiers}
         />
       </div>
 

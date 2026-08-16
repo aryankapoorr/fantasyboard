@@ -20,7 +20,6 @@ import {
 import { db } from "./firebase";
 import {
   addTier as addTierOp,
-  applyTierOrder,
   computeDraftPickUpdate,
   mergeMissingByDefaultOrder,
   removeTier as removeTierOp,
@@ -88,7 +87,6 @@ interface FirestoreBoardActions {
   addTier: (scope: TierScope, beforePlayerId: string | null) => void;
   removeTier: (tierId: string) => void;
   renameTier: (tierId: string, label: string) => void;
-  reorderTiers: (scope: TierScope, ordered: { id: string; beforePlayerId: string | null }[]) => void;
 }
 
 export function useFirestoreBoard(
@@ -219,13 +217,6 @@ export function useFirestoreBoard(
       if (!uid || !boardId || !doc_) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
         tiers: renameTierOp(doc_.tiers ?? [], tierId, label),
-        updatedAt: serverTimestamp(),
-      });
-    },
-    reorderTiers: (scope, ordered) => {
-      if (!uid || !boardId || !doc_) return;
-      void updateDoc(doc(db, "users", uid, "boards", boardId), {
-        tiers: applyTierOrder(doc_.tiers ?? [], scope, ordered),
         updatedAt: serverTimestamp(),
       });
     },
