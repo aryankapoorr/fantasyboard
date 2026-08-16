@@ -11,6 +11,7 @@ import {
   type SortDir,
   type SortKey,
 } from "@/lib/derive";
+import { normalizeName } from "@/lib/normalize";
 import type { BoardState, DraftStatus, Player, TierScope } from "@/lib/types";
 import { ColumnLegend } from "./ColumnLegend";
 import { FilterBar } from "./FilterBar";
@@ -75,8 +76,10 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
       setSortDir("asc");
       // Reordering moves a player to sit beside whatever's currently adjacent in customOrder —
       // if any filter is hiding players, "adjacent" in the visible list isn't adjacent in the
-      // real order, and the move silently reshuffles hidden players too.
-      setFilters((f) => ({ ...f, search: "", hideDrafted: false, onlyMine: false, onlyFavorites: false }));
+      // real order, and the move silently reshuffles hidden players too. Search is left alone:
+      // while editing it no longer filters the list (see `effectiveFilters` below), so it can't
+      // desync adjacency — it just scrolls to and highlights a match instead.
+      setFilters((f) => ({ ...f, hideDrafted: false, onlyMine: false, onlyFavorites: false }));
     }
   }
 
@@ -90,15 +93,32 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
       // scope's tiers you're editing.
       setSortKey("mine");
       setSortDir("asc");
-      setFilters((f) => ({ ...f, search: "", hideDrafted: false, onlyMine: false, onlyFavorites: false }));
+      setFilters((f) => ({ ...f, hideDrafted: false, onlyMine: false, onlyFavorites: false }));
     }
   }
+
+  const anyEditing = editMode || tierEditMode;
+
+  // While editing, search must not change which rows are mounted (drag-splicing and tier anchors
+  // both rely on the visible order matching the real underlying order) — so the search term is
+  // dropped from the filter itself and instead resolved below into a row to scroll to and highlight.
+  const effectiveFilters = useMemo(
+    () => (anyEditing ? { ...filters, search: "" } : filters),
+    [filters, anyEditing]
+  );
 
   const rows = useMemo(() => {
     if (!hydrated) return [];
     const built = buildRows(players, board, format);
-    return filterAndSortRows(built, filters, sortKey, sortDir);
-  }, [hydrated, players, board, filters, sortKey, sortDir, format]);
+    return filterAndSortRows(built, effectiveFilters, sortKey, sortDir);
+  }, [hydrated, players, board, effectiveFilters, sortKey, sortDir, format]);
+
+  const searchMatchId = useMemo(() => {
+    if (!anyEditing) return null;
+    const query = normalizeName(filters.search);
+    if (!query) return null;
+    return rows.find((r) => normalizeName(r.name).includes(query))?.id ?? null;
+  }, [anyEditing, filters.search, rows]);
 
   // Tiers exist for the whole board, for each real position, and for the FLEX view — every value
   // `filters.position` can take has its own tier list. Player drag reordering only ever runs at
@@ -187,6 +207,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
           canEditTiers={canEditTiers}
           tierScope={tierScope}
           scopeTiers={scopeTiers}
+          highlightRowId={searchMatchId}
           onSortChange={handleSortChange}
           onReorder={actions.reorderPlayer}
           onDraftMe={(id) => actions.setDraftStatus(id, "drafted_by_me")}

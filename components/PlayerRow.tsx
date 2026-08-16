@@ -62,6 +62,7 @@ interface PlayerRowContentProps {
   canMoveUp: boolean;
   canMoveDown: boolean;
   isDragging: boolean;
+  isHighlighted?: boolean;
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
   onDraftMe: (id: string) => void;
@@ -85,6 +86,7 @@ const PlayerRowContent = memo(function PlayerRowContent({
   canMoveUp,
   canMoveDown,
   isDragging,
+  isHighlighted = false,
   onMoveUp,
   onMoveDown,
   onDraftMe,
@@ -105,7 +107,7 @@ const PlayerRowContent = memo(function PlayerRowContent({
       {...dragHandleProps}
       aria-label={canDrag ? `Drag to reorder ${row.name}` : undefined}
       className={`border-b border-hairline transition-colors ${canDrag ? "cursor-grab active:cursor-grabbing" : ""} ${
-        isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : "bg-panel"
+        isDragging ? "z-10 bg-panel-raised shadow-lg shadow-black/40" : isHighlighted ? "bg-accent/15 ring-1 ring-inset ring-accent" : "bg-panel"
       } ${isDrafted ? "opacity-40" : ""}`}
     >
       <div
@@ -267,6 +269,7 @@ interface PlayerRowProps {
   canDrag: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  isHighlighted?: boolean;
   onMoveUp: (id: string) => void;
   onMoveDown: (id: string) => void;
   onDraftMe: (id: string) => void;

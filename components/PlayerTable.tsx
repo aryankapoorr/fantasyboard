@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
@@ -45,6 +45,9 @@ interface PlayerTableProps {
   groupByPosition?: boolean;
   tierScope: TierScope;
   scopeTiers: Tier[];
+  // The player currently matched by a search performed while editing (search doesn't filter the
+  // list in that mode — see BoardShell — so this is how a match surfaces instead).
+  highlightRowId: string | null;
   onSortChange: (key: SortKey) => void;
   onReorder: (activeId: string, overId: string) => void;
   onDraftMe: (id: string) => void;
@@ -121,6 +124,7 @@ export function PlayerTable({
   groupByPosition = false,
   tierScope,
   scopeTiers,
+  highlightRowId,
   onSortChange,
   onReorder,
   onDraftMe,
@@ -156,6 +160,21 @@ export function PlayerTable({
     scrollMargin: listElement?.offsetTop ?? 0,
     getItemKey: (index) => displayItemKey(displayItems[index]),
   });
+
+  const highlightIndex = useMemo(() => {
+    if (!highlightRowId) return null;
+    const index = displayItems.findIndex((item) => item.type === "row" && item.row.id === highlightRowId);
+    return index === -1 ? null : index;
+  }, [displayItems, highlightRowId]);
+
+  // Re-centers on a fresh search match — deliberately keyed on the resolved index rather than the
+  // virtualizer instance (a new object every render), so this doesn't fight the user's own scroll
+  // position on unrelated re-renders once a match is already in view.
+  useEffect(() => {
+    if (highlightIndex === null) return;
+    rowVirtualizer.scrollToIndex(highlightIndex, { align: "center", behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightIndex]);
 
   // Chevrons only ever move a player past its nearest player neighbor — any tier line between
   // them just follows its anchor player wherever it goes, so there's nothing extra to resolve
@@ -202,6 +221,7 @@ export function PlayerTable({
         canDrag={canDragPlayers}
         canMoveUp={canDragPlayers && (indexById.get(row.id) ?? 0) > 0}
         canMoveDown={canDragPlayers && (indexById.get(row.id) ?? 0) < rows.length - 1}
+        isHighlighted={row.id === highlightRowId}
         onMoveUp={handleMoveUp}
         onMoveDown={handleMoveDown}
         onDraftMe={onDraftMe}

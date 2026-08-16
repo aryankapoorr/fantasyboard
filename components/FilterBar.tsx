@@ -45,10 +45,9 @@ export function FilterBar({
             type="text"
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            disabled={anyEditing}
-            placeholder={anyEditing ? "Unavailable while editing" : "Search player…"}
-            aria-label="Search players"
-            className="w-40 rounded border border-hairline bg-board py-1.5 pl-8 pr-2.5 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-52"
+            placeholder={anyEditing ? "Find player…" : "Search player…"}
+            aria-label={anyEditing ? "Find and focus a player on the board" : "Search players"}
+            className="w-40 rounded border border-hairline bg-board py-1.5 pl-8 pr-2.5 font-body text-sm text-ink placeholder:text-ink-faint focus:border-accent sm:w-52"
           />
         </div>
 
