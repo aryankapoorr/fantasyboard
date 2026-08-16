@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import playersData from "@/data/players.json";
-import { sortByAdpIds } from "@/lib/derive";
+import { sortByFantasyProsIds } from "@/lib/derive";
 import { createBoard } from "@/lib/firestoreBoards";
 import type { Player, RankingFormat } from "@/lib/types";
 import { FormatChoice } from "./FormatChoice";
@@ -23,7 +23,7 @@ export function NewBoardDialog({ uid, onClose }: NewBoardDialogProps) {
     if (!trimmed || creating) return;
     setCreating(true);
     try {
-      const orderedIds = sortByAdpIds(playersData.players as Player[], format);
+      const orderedIds = sortByFantasyProsIds(playersData.players as Player[], format);
       const id = await createBoard(uid, trimmed, orderedIds, playersData.season, format);
       router.push(`/boards/${id}`);
     } finally {

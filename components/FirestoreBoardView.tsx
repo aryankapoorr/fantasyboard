@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { sortByAdpIds } from "@/lib/derive";
+import { sortByFantasyProsIds } from "@/lib/derive";
 import { useFirestoreBoard } from "@/lib/firestoreBoards";
 import type { Player } from "@/lib/types";
 import { BoardShell } from "./BoardShell";
@@ -21,7 +21,7 @@ export function FirestoreBoardView({ uid, boardId, players }: FirestoreBoardView
     // that isn't in customOrder at all. Runs once per board load (not on every snapshot update,
     // e.g. every reorder/draft pick) since it's keyed on boardId + board-loaded, not on `board`
     // itself, which is a new object reference on every Firestore update.
-    if (board) actions.initOrder(sortByAdpIds(players, board.format));
+    if (board) actions.initOrder(sortByFantasyProsIds(players, board.format));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId, !!board]);
 

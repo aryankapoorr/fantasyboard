@@ -1,6 +1,7 @@
 import { normalizeName } from "../../lib/normalize";
 import type { Player, Position, RankingBundle, RankingFormat, SeedPlayer, StatLine } from "../../lib/types";
 import type { EspnPlayer } from "./espn";
+import type { FantasyProsPlayer } from "./fantasypros";
 import type { FfcPlayer } from "./ffc";
 import type { SleeperData, SleeperEntry } from "./sleeper";
 
@@ -10,6 +11,7 @@ export interface FormatCoverage {
   positionRankEspnCount: number;
   topTierPositionRankEspnCount: number;
   ffcMatchedCount: number;
+  fantasyProsMatchedCount: number;
 }
 
 export interface MergeResult {
@@ -45,6 +47,7 @@ interface EspnEntry {
   espnIndex: number;
   seed: SeedPlayer | undefined;
   ffc: Record<RankingFormat, FfcPlayer | undefined>;
+  fantasyPros: Record<RankingFormat, FantasyProsPlayer | undefined>;
   sleeperProjection: SleeperEntry | undefined;
   sleeperLastSeason: SleeperEntry | undefined;
 }
@@ -76,6 +79,7 @@ export function mergePlayers(
   seed: SeedPlayer[],
   espnPlayers: EspnPlayer[],
   ffcByFormat: Record<RankingFormat, FfcPlayer[]>,
+  fpByFormat: Record<RankingFormat, FantasyProsPlayer[]>,
   sleeper: SleeperData,
   aliases: Record<string, string>
 ): MergeResult {
@@ -117,6 +121,24 @@ export function mergePlayers(
     }
   }
 
+  const fpIndex: Record<
+    RankingFormat,
+    { byNameAndPosition: Map<string, FantasyProsPlayer>; dstByTeam: Map<string, FantasyProsPlayer> }
+  > = {
+    ppr: { byNameAndPosition: new Map(), dstByTeam: new Map() },
+    standard: { byNameAndPosition: new Map(), dstByTeam: new Map() },
+  };
+  for (const format of FORMATS) {
+    for (const fp of fpByFormat[format]) {
+      if (!fp.position) continue;
+      if (fp.position === "DST") {
+        fpIndex[format].dstByTeam.set(fp.team, fp);
+      } else {
+        fpIndex[format].byNameAndPosition.set(indexKey(fp.name, fp.position), fp);
+      }
+    }
+  }
+
   function lookupSeed(ep: EspnPlayer): SeedPlayer | undefined {
     if (ep.position === "DST") return seedByTeam.get(ep.team);
     for (const key of aliasedKeys(ep.fullName, ep.position!)) {
@@ -130,6 +152,15 @@ export function mergePlayers(
     if (ep.position === "DST") return ffcIndex[format].dstByTeam.get(ep.team);
     for (const key of aliasedKeys(ep.fullName, ep.position!)) {
       const hit = ffcIndex[format].byNameAndPosition.get(key);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
+
+  function lookupFantasyPros(ep: EspnPlayer, format: RankingFormat): FantasyProsPlayer | undefined {
+    if (ep.position === "DST") return fpIndex[format].dstByTeam.get(ep.team);
+    for (const key of aliasedKeys(ep.fullName, ep.position!)) {
+      const hit = fpIndex[format].byNameAndPosition.get(key);
       if (hit) return hit;
     }
     return undefined;
@@ -159,11 +190,16 @@ export function mergePlayers(
         standard: lookupFfc(ep, "standard"),
       };
 
+      const fantasyPros: Record<RankingFormat, FantasyProsPlayer | undefined> = {
+        ppr: lookupFantasyPros(ep, "ppr"),
+        standard: lookupFantasyPros(ep, "standard"),
+      };
+
       const sleeperProjection = lookupSleeper(sleeper.projections, ep);
       const sleeperLastSeason = lookupSleeper(sleeper.lastSeason, ep);
       if (sleeperProjection || sleeperLastSeason) sleeperMatchedCount++;
 
-      entries.push({ espn: ep, position: ep.position, espnIndex, seed: seedMatch, ffc, sleeperProjection, sleeperLastSeason });
+      entries.push({ espn: ep, position: ep.position, espnIndex, seed: seedMatch, ffc, fantasyPros, sleeperProjection, sleeperLastSeason });
     });
 
   const topTierCount = entries.filter((e) => e.espnIndex < TOP_TIER_ESPN_INDEX).length;
@@ -204,8 +240,8 @@ export function mergePlayers(
   }
 
   const coverage: Record<RankingFormat, FormatCoverage> = {
-    ppr: { consensusEspnCount: 0, topTierConsensusEspnCount: 0, positionRankEspnCount: 0, topTierPositionRankEspnCount: 0, ffcMatchedCount: 0 },
-    standard: { consensusEspnCount: 0, topTierConsensusEspnCount: 0, positionRankEspnCount: 0, topTierPositionRankEspnCount: 0, ffcMatchedCount: 0 },
+    ppr: { consensusEspnCount: 0, topTierConsensusEspnCount: 0, positionRankEspnCount: 0, topTierPositionRankEspnCount: 0, ffcMatchedCount: 0, fantasyProsMatchedCount: 0 },
+    standard: { consensusEspnCount: 0, topTierConsensusEspnCount: 0, positionRankEspnCount: 0, topTierPositionRankEspnCount: 0, ffcMatchedCount: 0, fantasyProsMatchedCount: 0 },
   };
 
   const players: Player[] = entries.map((e) => {
@@ -216,6 +252,7 @@ export function mergePlayers(
       const consensus = consensusRankByFormat[format].get(e)!;
       const positionRank = positionRankByFormat[format].get(e)!;
       const ffcPlayer = e.ffc[format];
+      const fpPlayer = e.fantasyPros[format];
 
       if (consensus.source === "espn") {
         coverage[format].consensusEspnCount++;
@@ -226,6 +263,7 @@ export function mergePlayers(
         if (isTopTier) coverage[format].topTierPositionRankEspnCount++;
       }
       if (ffcPlayer) coverage[format].ffcMatchedCount++;
+      if (fpPlayer) coverage[format].fantasyProsMatchedCount++;
 
       bundles[format] = {
         consensusRank: consensus.rank,
@@ -246,6 +284,7 @@ export function mergePlayers(
         adpSampleSize: ffcPlayer?.timesDrafted ?? null,
         projectedPoints: (format === "ppr" ? e.sleeperProjection?.pointsPpr : e.sleeperProjection?.pointsStd) ?? null,
         lastSeasonPoints: (format === "ppr" ? e.sleeperLastSeason?.pointsPpr : e.sleeperLastSeason?.pointsStd) ?? null,
+        fantasyProsRank: fpPlayer?.rank ?? null,
       };
     }
 

@@ -22,7 +22,7 @@ import {
   addTier as addTierOp,
   applyTierOrder,
   computeDraftPickUpdate,
-  mergeMissingByAdpOrder,
+  mergeMissingByDefaultOrder,
   removeTier as removeTierOp,
   renameTier as renameTierOp,
   spliceReorder,
@@ -131,7 +131,7 @@ export function useFirestoreBoard(
   const actions: FirestoreBoardActions = {
     initOrder: (playerIds) => {
       if (!uid || !boardId || !doc_) return;
-      const next = mergeMissingByAdpOrder(doc_.customOrder, playerIds);
+      const next = mergeMissingByDefaultOrder(doc_.customOrder, playerIds);
       if (next === doc_.customOrder) return;
       void updateDoc(doc(db, "users", uid, "boards", boardId), {
         customOrder: next,

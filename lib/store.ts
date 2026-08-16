@@ -6,7 +6,7 @@ import {
   applyNote,
   applyTierOrder,
   computeDraftPickUpdate,
-  mergeMissingByAdpOrder,
+  mergeMissingByDefaultOrder,
   removeTier as removeTierOp,
   renameTier as renameTierOp,
   spliceReorder,
@@ -52,7 +52,7 @@ export const useBoardStore = create<BoardStore>()(
       initOrder: (playerIds) => {
         const { customOrder } = get();
         if (customOrder.length > 0) {
-          const next = mergeMissingByAdpOrder(customOrder, playerIds);
+          const next = mergeMissingByDefaultOrder(customOrder, playerIds);
           if (next !== customOrder) set({ customOrder: next });
           return;
         }

@@ -107,8 +107,8 @@ export function PlayerRow({
       <div
         className={`group grid items-center gap-2 px-3 py-2.5 sm:gap-3 ${
           editMode
-            ? "grid-cols-[auto_1.75rem_1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
-            : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            ? "grid-cols-[auto_1.75rem_1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            : "grid-cols-[1fr_1.5rem_2.75rem_auto_auto_auto] sm:grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_4.5rem_9rem]"
         }`}
       >
         {/* This column's grid slot only exists in the layout when editMode's template reserves it
@@ -188,6 +188,12 @@ export function PlayerRow({
           <Star size={15} fill={row.isFavorite ? "currentColor" : "none"} />
         </button>
 
+        <div
+          className="hidden text-right font-mono text-sm tabular-nums text-ink-muted sm:block"
+          title="FantasyPros expert consensus rank (ECR)"
+        >
+          {row.fantasyProsRank !== null ? `#${row.fantasyProsRank}` : "—"}
+        </div>
         <div className="text-right font-mono text-sm tabular-nums text-ink-muted" title={adpTooltip(row)}>
           {row.adp !== null ? row.adp.toFixed(1) : "—"}
         </div>

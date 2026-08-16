@@ -2,7 +2,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { normalizeName } from "./normalize";
 import type { BoardState, DraftStatus, Player, Position, RankingFormat, Tier } from "./types";
 
-export type SortKey = "mine" | "consensus" | "adp" | "delta" | "name";
+export type SortKey = "mine" | "consensus" | "adp" | "delta" | "name" | "fantasyPros";
 export type SortDir = "asc" | "desc";
 
 export type BoardRow = Omit<Player, "ppr" | "standard"> &
@@ -42,15 +42,16 @@ export function buildRows(players: Player[], board: BoardState, format: RankingF
   });
 }
 
-// Default ordering for new boards and "reset to ADP": ADP ascending, undrafted-ADP players
-// fall back to consensusRank so they still land in a sensible spot instead of all at the end.
-export function sortByAdpIds(players: Player[], format: RankingFormat): string[] {
+// Default ordering for new boards and "reset to fp rank": FantasyPros ECR ascending, players
+// FantasyPros doesn't rank (mostly deep bench/waiver players) fall back to consensusRank so they
+// still land in a sensible spot instead of all at the end.
+export function sortByFantasyProsIds(players: Player[], format: RankingFormat): string[] {
   return players
     .slice()
     .sort((a, b) => {
       const av = a[format];
       const bv = b[format];
-      return (av.adp ?? 1000 + av.consensusRank) - (bv.adp ?? 1000 + bv.consensusRank);
+      return (av.fantasyProsRank ?? 1000 + av.consensusRank) - (bv.fantasyProsRank ?? 1000 + bv.consensusRank);
     })
     .map((p) => p.id);
 }
@@ -86,6 +87,8 @@ export function filterAndSortRows(
         return (nullsLast(a.adp) - nullsLast(b.adp)) * dir;
       case "delta":
         return (nullsLast(a.adpWeeklyDelta) - nullsLast(b.adpWeeklyDelta)) * dir;
+      case "fantasyPros":
+        return (nullsLast(a.fantasyProsRank) - nullsLast(b.fantasyProsRank)) * dir;
       case "name":
         return a.name.localeCompare(b.name) * dir;
       default:

@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 import { fetchPlayerPool } from "./lib/espn";
+import { fetchFantasyProsRankings } from "./lib/fantasypros";
 import { fetchFfcAdp } from "./lib/ffc";
 import { fetchSleeperData } from "./lib/sleeper";
 import { mergePlayers, round1 } from "./lib/merge";
@@ -67,6 +68,13 @@ async function main() {
   const ffcStandard = await fetchFfcAdp(season, "standard");
   console.log(`Fetched ${ffcPpr.length} FFC PPR players, ${ffcStandard.length} FFC standard players.`);
 
+  console.log("Fetching FantasyPros expert consensus rankings (PPR and standard)...");
+  const fpStandard = await fetchFantasyProsRankings("standard");
+  // FantasyPros' robots.txt sets a 5s crawl-delay; respect it between our two requests to their site.
+  await new Promise((r) => setTimeout(r, 5000));
+  const fpPpr = await fetchFantasyProsRankings("ppr");
+  console.log(`Fetched ${fpStandard.length} FantasyPros standard players, ${fpPpr.length} FantasyPros PPR players.`);
+
   console.log(`Fetching Sleeper projections (${season}) and last-season stats (${season - 1})...`);
   const sleeperData = await fetchSleeperData(season);
   console.log(
@@ -78,6 +86,7 @@ async function main() {
     seed,
     espnPlayers,
     { ppr: ffcPpr, standard: ffcStandard },
+    { ppr: fpPpr, standard: fpStandard },
     sleeperData,
     aliases
   );
@@ -101,10 +110,12 @@ async function main() {
     const positionRankPct = ((c.positionRankEspnCount / players.length) * 100).toFixed(1);
     const topTierPositionRankRate = topTierCount > 0 ? c.topTierPositionRankEspnCount / topTierCount : 1;
     const ffcPct = ((c.ffcMatchedCount / players.length) * 100).toFixed(1);
+    const fpPct = ((c.fantasyProsMatchedCount / players.length) * 100).toFixed(1);
     console.log(
       `[${format}] consensus from ESPN: ${c.consensusEspnCount}/${players.length} (${consensusPct}%), ${(topTierConsensusRate * 100).toFixed(1)}% within top tier. ` +
         `positionRank from ESPN: ${c.positionRankEspnCount}/${players.length} (${positionRankPct}%), ${(topTierPositionRankRate * 100).toFixed(1)}% within top tier. ` +
-        `FFC ADP matched: ${c.ffcMatchedCount}/${players.length} (${ffcPct}%).`
+        `FFC ADP matched: ${c.ffcMatchedCount}/${players.length} (${ffcPct}%). ` +
+        `FantasyPros ECR matched: ${c.fantasyProsMatchedCount}/${players.length} (${fpPct}%).`
     );
 
     if (format === "ppr" && topTierPositionRankRate < MIN_TOP_TIER_PPR_POSITION_RANK_ESPN_RATE) {

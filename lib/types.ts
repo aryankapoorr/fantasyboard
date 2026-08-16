@@ -21,6 +21,7 @@ export interface RankingBundle {
   adpSampleSize: number | null; // FFC times_drafted
   projectedPoints: number | null; // Sleeper/RotoWire full-season projection, this format only
   lastSeasonPoints: number | null; // Sleeper actual full-season total from the prior season, this format only
+  fantasyProsRank: number | null; // FantasyPros expert consensus rank (ECR), this format only — null if unmatched
 }
 
 // Position-agnostic per-game-category totals (season projection or prior-season actual).

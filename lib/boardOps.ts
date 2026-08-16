@@ -27,23 +27,23 @@ export function spliceReorder(order: string[], activeId: string, overId: string)
 
 // Folds any player ids missing from `order` into it — new players the board hasn't seen yet
 // (e.g. added by a later data refresh). Each missing id is inserted immediately before the first
-// existing entry that ranks worse than it in `adpOrderedIds`, so it lands near its real ADP
+// existing entry that ranks worse than it in `defaultOrderedIds`, so it lands near its real rank
 // relative to players already on the board instead of being dumped at the very bottom, where
 // reordering it back up would take hundreds of moves. Existing entries' relative order is
 // untouched. Returns the same array reference when nothing is missing, so callers can skip a
 // write with a simple `!==` check.
-export function mergeMissingByAdpOrder(order: string[], adpOrderedIds: string[]): string[] {
+export function mergeMissingByDefaultOrder(order: string[], defaultOrderedIds: string[]): string[] {
   const known = new Set(order);
-  const missing = adpOrderedIds.filter((id) => !known.has(id));
+  const missing = defaultOrderedIds.filter((id) => !known.has(id));
   if (missing.length === 0) return order;
 
-  const adpRank = new Map(adpOrderedIds.map((id, i) => [id, i]));
+  const defaultRank = new Map(defaultOrderedIds.map((id, i) => [id, i]));
   const next = order.slice();
   for (const id of missing) {
-    const rank = adpRank.get(id)!;
+    const rank = defaultRank.get(id)!;
     let insertAt = next.length;
     for (let i = 0; i < next.length; i++) {
-      const existingRank = adpRank.get(next[i]);
+      const existingRank = defaultRank.get(next[i]);
       if (existingRank !== undefined && existingRank > rank) {
         insertAt = i;
         break;

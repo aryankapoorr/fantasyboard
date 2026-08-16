@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { sortByAdpIds } from "@/lib/derive";
+import { sortByFantasyProsIds } from "@/lib/derive";
 import { useBoardStore } from "@/lib/store";
 import type { Player } from "@/lib/types";
 import { BoardShell } from "./BoardShell";
@@ -22,7 +22,7 @@ export function GuestBoard({ players }: { players: Player[] }) {
     // any players missing from it. A brand new board (no order yet) waits for the format pick
     // below instead of defaulting silently.
     if (hydrated && store.customOrder.length > 0) {
-      store.initOrder(sortByAdpIds(players, store.format));
+      store.initOrder(sortByFantasyProsIds(players, store.format));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
@@ -41,10 +41,10 @@ export function GuestBoard({ players }: { players: Player[] }) {
         <div className="w-full max-w-sm text-center">
           <h1 className="font-display text-lg font-medium tracking-wide text-ink">Choose a scoring format</h1>
           <p className="mt-1.5 font-mono text-[11px] text-ink-faint">
-            Sets your board&apos;s default ADP and rankings order.
+            Sets your board&apos;s default order and rankings.
           </p>
           <div className="mt-5">
-            <FormatChoice onChoose={(format) => store.chooseFormat(format, sortByAdpIds(players, format))} />
+            <FormatChoice onChoose={(format) => store.chooseFormat(format, sortByFantasyProsIds(players, format))} />
           </div>
         </div>
       </div>

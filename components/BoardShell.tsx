@@ -5,7 +5,7 @@ import {
   buildRows,
   countsByPosition,
   filterAndSortRows,
-  sortByAdpIds,
+  sortByFantasyProsIds,
   POSITION_GROUP_ORDER,
   type FilterState,
   type SortDir,
@@ -55,7 +55,7 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
     onlyFavorites: false,
   });
 
-  const adpOrderedIds = useMemo(() => sortByAdpIds(players, format), [players, format]);
+  const defaultOrderedIds = useMemo(() => sortByFantasyProsIds(players, format), [players, format]);
 
   function handleSortChange(key: SortKey) {
     if (key === sortKey) {
@@ -145,8 +145,8 @@ export function BoardShell({ players, board, hydrated, actions }: BoardShellProp
         onTierEditModeChange={handleTierEditModeChange}
         tierScope={tierScope}
         onReset={() => {
-          if (window.confirm("Reset your custom order back to ADP order?")) {
-            actions.resetOrder(adpOrderedIds);
+          if (window.confirm("Reset your custom order back to FantasyPros rank order?")) {
+            actions.resetOrder(defaultOrderedIds);
           }
         }}
         onResetDraft={() => {

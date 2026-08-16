@@ -177,8 +177,8 @@ export function PlayerTable({
       <div
         className={`hidden items-start gap-3 border-b border-hairline bg-panel-raised px-3 py-2 sm:grid ${
           editMode
-            ? "grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
-            : "grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            ? "grid-cols-[5rem_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_4.5rem_9rem]"
+            : "grid-cols-[auto_2.5rem_minmax(0,1fr)_1.5rem_4.5rem_4.5rem_4.5rem_4.5rem_9rem]"
         }`}
       >
         <div className="w-6" />
@@ -187,8 +187,9 @@ export function PlayerTable({
           Player
         </div>
         <div className="w-6" />
+        <HeaderCell label={`FP (${formatLabel})`} sortKey="fantasyPros" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <HeaderCell label={`ADP (${formatLabel})`} sortKey="adp" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
-        <HeaderCell label={`Rank (${formatLabel})`} sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
+        <HeaderCell label={`ER (${formatLabel})`} sortKey="consensus" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <HeaderCell label="Δ7d" sortKey="delta" activeKey={sortKey} activeDir={sortDir} onClick={onSortChange} />
         <div className="text-right font-mono text-[11px] font-medium uppercase tracking-wider text-ink-faint">
           Drafted
