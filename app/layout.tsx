@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
+import { SITE_URL } from "@/lib/site";
 
 const oswald = Oswald({
   variable: "--font-display",
@@ -23,9 +24,25 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+const title = "FantasyBoard — Draft Board";
+const description = "A fantasy football draft board with consensus rankings, live ADP, and your own custom ranks.";
+
 export const metadata: Metadata = {
-  title: "FantasyBoard — Draft Board",
-  description: "A fantasy football draft board with consensus rankings, live ADP, and your own custom ranks.",
+  metadataBase: new URL(SITE_URL),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: SITE_URL,
+    siteName: "FantasyBoard",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 export default function RootLayout({
